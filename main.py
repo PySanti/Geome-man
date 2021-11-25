@@ -21,7 +21,6 @@ pygame.mixer.init()
 #        Colisiones reales (y adision de sprites)
 #        Revisar otros proyectos y hacerlos portables a Windows (probar)
 #        Retroceso de arma
-#        Subir a GH
 #        Documentar
 #        Arreglar imagen de las celdas (poner imagenes mas de tipo rambo)
 #        Poner balas y particulas al disparar
