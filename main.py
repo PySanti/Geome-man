@@ -59,6 +59,9 @@ SCROLL              =   [0,0]
 SCROLL_SMOOTH       =   20
 SHOT_LIMIT          = 100
 BULLETS_FRAME       =   500
+WAKE_SIZE           =   [40,20]
+WAKE_ANIMATIONS     =   engine.loadWakeAnimations("material/estela", WAKE_SIZE)
+WAKE_LIST           =   []
 
 PLAYER.weaponList.append(engine.Weapon(
         sprite_path = ASSETS_PATH + "/armas/ametralladora_1.png", 
@@ -66,7 +69,7 @@ PLAYER.weaponList.append(engine.Weapon(
         volume = 1, 
         size = [60, 20], 
         has_alpha_pixels = True, 
-        amoo = 20, 
+        amoo = 100, 
         shots_per_iter = 5, 
         relative_pos = [PLAYER.width//1.5, PLAYER.height//1.5], 
         id_ = 0, 
@@ -91,6 +94,7 @@ while not EXIT:
 
     #   ````````        update
     weapon = PLAYER.weaponList[PLAYER.currentWeapon]
+    engine.updateWakes(WAKE_LIST, SCROLL)
     MIRA.updateState(MIRA_SMOOTH)
     PLAYER.updateState(MIRA, SCROLL, SHOT_SMOOTH, GRAVITY, MAX_GRAVITY, CELL_LIST, BULLETS_FRAME)
     weapon.updateCurrentRotationAngle(MIRA, SCROLL, PLAYER)
@@ -98,7 +102,7 @@ while not EXIT:
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
 
     #   ````````        render
-
+    engine.renderWakes(WAKE_LIST, PIV_SURFACE, SCROLL)
     engine.printMap(TILE_SIZE, CELL_LIST, TILES, PIV_SURFACE, GAME_MAP, SCROLL)
     PLAYER.render(PIV_SURFACE, SCROLL)
     MIRA.render(PIV_SURFACE)
@@ -107,8 +111,10 @@ while not EXIT:
     #engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, PLAYER.weaponList[PLAYER.currentWeapon], MIRA)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
+    #   ````````        event handling
     # recordar que tenemos que retornar tanto EXIT como LAST_MOUSE_POS por que al sustituir su valor, se crea una variable nueva, por lo tanto la referencia no es la misma
-    EXIT, LAST_MOUSE_POS = engine.eventHandling(pygame.event.get(), PLAYER, MIRA, EXIT, JUMP_FORCE,  LAST_MOUSE_POS)
+    EXIT, LAST_MOUSE_POS = engine.eventHandling(pygame.event.get(), PLAYER, MIRA, EXIT, JUMP_FORCE,  LAST_MOUSE_POS, WAKE_LIST, WAKE_ANIMATIONS, WAKE_SIZE)
     CLOCK.tick(60)
     pygame.display.update()
+
 pygame.quit()

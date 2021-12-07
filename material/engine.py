@@ -5,6 +5,22 @@ import math
 import os
 from random import randint
 
+class Wake:
+    def __init__(self, max_frames, position, animations):
+        self.animations = animations
+        self.position = position
+        self.max_frames =  max_frames
+        self.current_frame = 0
+        self.current_sprite = 0
+    def update(self):
+        if self.current_frame  == self.max_frames:
+            self.current_frame = 0
+            self.current_sprite += 1
+        else:
+            self.current_frame += 1
+    def render(self, surface, scroll):
+        surface.blit(self.animations[self.current_sprite], [self.position[0] - scroll[0], self.position[1] - scroll[1]])
+
 
 class Player:
     def __init__(self, animation_path, frames_per_image, steps_sound, player_speed, jump_sound):
@@ -135,6 +151,7 @@ class Player:
                 self.jump_count += 1
                 self.in_floor = False
                 self.jump_sound.play().fadeout(500)
+                self.last_jump_position = [self.rect.x, self.rect.y + self.height]
             elif self.jump_count == 1:
                 self.jump_count += 1
                 self.y_momentum = jump_force*2
@@ -269,8 +286,6 @@ class Weapon:
         """
         for bullet in self.pend_bullets:
             bullet.render(surface, self.bullet_img)
-
-
 class Bullet:
     def __init__(self, initial_pos, move, angle):
         self.position = initial_pos
@@ -286,6 +301,7 @@ class Bullet:
         img = bullet_img.copy()
         img = pygame.transform.rotate(img, self.angle)
         surface.blit(img, self.position)
+
 
 def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
     windowLimits = [0,0]
@@ -310,8 +326,7 @@ def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
         proportion = (relativeWeaponPos[1]/relativeWeaponPos2[1])
         relativeWeaponPos[0] *= (proportion)
     return [relativeWeaponPos[0] + weaponPos[0], relativeWeaponPos[1] + weaponPos[1]]
-    
-def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos):
+def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos, wake_list, wake_animations, wake_size):
     for event in eventList:
         if event.type == QUIT:
             EXIT = True
@@ -324,6 +339,9 @@ def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos):
                 player.moving_left = (event.type == KEYDOWN)
         if (event.type == MOUSEBUTTONDOWN) or (event.type == MOUSEBUTTONUP):
             if (event.button == 3) and (event.type == MOUSEBUTTONDOWN):
+                if player.jump_count == 0:
+                    animation_direction = player.animation_manager.current_animation_name.split("/")[1]
+                    wake_list.append(Wake(3, [player.rect.x, player.rect.y + player.height - wake_size[1]], wake_animations["right" if animation_direction == "left" else "left"]))
                 player.jump(jump_force)
             elif (event.button == 1):
                 player.attacking = (event.type == MOUSEBUTTONDOWN)
@@ -458,3 +476,31 @@ def getImageReady(img, size, colorkey, has_alpha_pixels):
 def updateScroll(scroll, player, surface_size, scroll_smooth):
     scroll[0] += (player.rect.x - scroll[0] - surface_size[0]//2)//scroll_smooth
     scroll[1] += (player.rect.y - scroll[1] - surface_size[1]//2)//scroll_smooth
+def loadWakeAnimations(path, size ):
+    animations = {}
+    for direction in os.listdir(path):
+        animations[direction] = []
+        current_target = 1
+        currIndex = 0
+        animationList = os.listdir(f"{path}/{direction}")
+        while current_target != len(animationList):
+            if str(current_target) in animationList[currIndex]:
+                animations[direction].append(getImageReady(pygame.image.load(f"{path}/{direction}/{animationList[currIndex]}"), size, None, True))
+                current_target += 1
+                currIndex = 0
+            else:
+                currIndex += 1
+    
+    return animations
+
+def renderWakes(wake_list, surface, scroll):
+    for wake in wake_list:
+        wake.render(surface, scroll)
+    
+
+def updateWakes(wake_list, scroll):
+    wakeList2 = wake_list.copy()
+    for wake in wakeList2:
+        wake.update()
+        if wake.current_sprite == len(wake.animations):
+            wake_list.remove(wake)
