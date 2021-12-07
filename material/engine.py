@@ -171,7 +171,7 @@ class Weapon:
         Clase creada para el uso y mantenimiento del arma del personaje
         Nota: recordar que la idea a futuro es que el usuario pueda usar varias armas, es por eso que se solicitan tantos datos. Ademas recordar que el "arma actual" la lleva el personaje, no puede ser una variable global.
     """
-    def __init__(self, sprite_path, sound_effect_path, volume, size, has_alpha_pixels, amoo, shots_per_iter, relative_pos, id_, bullet_img, is_melee):
+    def __init__(self, sprite_path, sound_effect_path, volume, size, has_alpha_pixels, amoo, shots_per_iter, relative_pos, id_, bullet_img, no_amoo_sound_path, is_melee):
         self.size               = size
         self.sprite             = pygame.transform.scale(pygame.image.load(sprite_path), size)
         self.amoo               = amoo
@@ -181,12 +181,13 @@ class Weapon:
         self.id                 = id_
         self.pend_bullets       =   []
         self.sound_effect       = pygame.mixer.Sound(sound_effect_path)
+        self.no_amoo_sound      = pygame.mixer.Sound(no_amoo_sound_path)
+        self.no_amoo_sound.set_volume(0.2)
         self.sound_effect.set_volume(volume)
         self.currentOrientation = "right"
         self.bullet_img         =   bullet_img
         self.flipping_dict      = { "right" : True, "left" : False }
-        self.operativeSprite    = None
-        self.pepe               = None
+        self.operativesprite    = None
         self.is_melee           = is_melee
         convertFunction = self.sprite.convert_alpha if has_alpha_pixels else self.sprite.convert
         convertFunction()
@@ -227,24 +228,29 @@ class Weapon:
         """
         if self.amoo > 0:
             weaponPos = getScrolledPosition(scroll, weaponPosition(player, self.relative_pos))
-            catetoOpuesto =  mira.position[1] - weaponPos[1] + mira.sprite.get_height()//2
-            catetoAdyacente =  mira.position[0] - weaponPos[0] + mira.sprite.get_width()//2
-
+            proportionalTriangle = proportionalLimitTriangle(mira.position, weaponPos, bullets_frame)
+            catetoOpuesto =   proportionalTriangle[1] - weaponPos[1] + mira.sprite.get_height()//2
+            catetoAdyacente =  proportionalTriangle[0] - weaponPos[0] + mira.sprite.get_width()//2
             # desviaciones
-            #limit = 20
-            #catetoOpuesto += randint(1,limit)
-            #catetoAdyacente += randint(1,limit)
-
-
-
-
+            limit = self.shots_per_iter*10
+            catetoOpuesto += randint(1,limit)
+            catetoAdyacente += randint(1,limit)
 
             move = [catetoAdyacente//shot_smooth, catetoOpuesto//shot_smooth]
             self.pend_bullets.append(Bullet(weaponPos, move, self.currentAngle))
             self.amoo -= 1
-            self.sound_effect.play().fadeout(500)
+            random = randint(1,3)
+            if  random == 2:
+                self.sound_effect.set_volume(0.5)
+                self.sound_effect.play().fadeout(500)
+            elif random == 3:
+                self.sound_effect.set_volume(0.4)
+                self.sound_effect.play().fadeout(500)
+            else:
+                self.sound_effect.set_volume(0.6)
+                self.sound_effect.play().fadeout(500)
         elif self.amoo == 0:
-            # dar play a sonido "sin balas"
+            self.no_amoo_sound.play().fadeout(500)
             pass
     def updateBulletsPosition(self,  surface_size):
         """
@@ -263,6 +269,8 @@ class Weapon:
         """
         for bullet in self.pend_bullets:
             bullet.render(surface, self.bullet_img)
+
+
 class Bullet:
     def __init__(self, initial_pos, move, angle):
         self.position = initial_pos
@@ -282,7 +290,6 @@ class Bullet:
 def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
     windowLimits = [0,0]
     miraPosition = miraRealPos.copy()
-    miraPosition2 = miraPosition.copy()
     if miraPosition[1] < weaponPos[1]:
         windowLimits[1] = -bullets_frame
     else:
@@ -295,22 +302,14 @@ def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
     relativeWeaponPos2 = relativeWeaponPos.copy()
     spaceDiff = [(abs(windowLimits[0]) - abs( relativeWeaponPos[0])),(abs(windowLimits[1]) - abs( relativeWeaponPos[1]))]
     if spaceDiff[0] < spaceDiff[1]:
-        print("x")
         relativeWeaponPos[0] = windowLimits[0]
         proportion = (relativeWeaponPos[0]/relativeWeaponPos2[0])
         relativeWeaponPos[1] *= (proportion)
     else:
-        print("y")
         relativeWeaponPos[1] = windowLimits[1]
         proportion = (relativeWeaponPos[1]/relativeWeaponPos2[1])
         relativeWeaponPos[0] *= (proportion)
-    print(f"Space diff {spaceDiff}")
-    print(f"Window limits   {windowLimits}")
-    print(f"New position   {relativeWeaponPos}")
-    print(f"Proportion {proportion}")
-    print(f"Relative weapon pos {relativeWeaponPos}")
-    del miraPosition2
-    return relativeWeaponPos
+    return [relativeWeaponPos[0] + weaponPos[0], relativeWeaponPos[1] + weaponPos[1]]
     
 def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos):
     for event in eventList:

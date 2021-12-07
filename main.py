@@ -1,15 +1,12 @@
 import pygame
 import os
-from pygame.display import update
 from pygame.locals import *
 from material import engine
 pygame.init()
 pygame.mixer.init()
 
 #   todo :
-#       recordar usar el arma como punto 0 del plano para usar la tecnica del marco para los disparos
-#        repasar codigo
-#        implementar sonido "sin balas"
+#        aumentar realismo de sonido de disparo, implementar cambios de precision relativos a la cadencia del arma, impolementar colatazos
 #        implementar colisiones de balas
 #        implementar objetos de ambiente 
 #        implementar outlines 
@@ -44,7 +41,7 @@ SPEED               =   5
 GRAVITY             =   1
 MAX_GRAVITY         =   10
 JUMP_FORCE          =   -8
-SHOT_SMOOTH         =  10
+SHOT_SMOOTH         =  20
 FRAMES_PER_IMAGE    =   7
 SOUNDS_PATH         =   ASSETS_PATH + "/efects/"
 BACKGROUND_MUSIC    =   pygame.mixer.music.load(SOUNDS_PATH + "background.wav")
@@ -63,7 +60,20 @@ SCROLL_SMOOTH       =   20
 SHOT_LIMIT          = 100
 BULLETS_FRAME       =   500
 
-PLAYER.weaponList.append(engine.Weapon(ASSETS_PATH + "/armas/ametralladora_1.png", ASSETS_PATH + "/efects/shots/shot.wav", 1, [60, 20], True, 1000, 5, [PLAYER.width//1.5, PLAYER.height//1.5], 0, engine.getImageReady(pygame.image.load(ASSETS_PATH + "/armas/bullet2.png"), [20, 3], None, True), False))
+PLAYER.weaponList.append(engine.Weapon(
+        sprite_path = ASSETS_PATH + "/armas/ametralladora_1.png", 
+        sound_effect_path = ASSETS_PATH + "/efects/shots/shot.wav", 
+        volume = 1, 
+        size = [60, 20], 
+        has_alpha_pixels = True, 
+        amoo = 20, 
+        shots_per_iter = 5, 
+        relative_pos = [PLAYER.width//1.5, PLAYER.height//1.5], 
+        id_ = 0, 
+        bullet_img = engine.getImageReady(pygame.image.load(ASSETS_PATH + "/armas/bullet2.png"), [20, 3], None, True), 
+        no_amoo_sound_path = ASSETS_PATH + "/efects/shots/no amoo.wav",
+        is_melee = False))
+
 JUMP_SOUND.set_volume(0.4)
 STEPS_SOUND.set_volume(0.3)
 pygame.mixer.music.set_volume(0.03)
@@ -89,16 +99,12 @@ while not EXIT:
 
     #   ````````        render
 
-
     engine.printMap(TILE_SIZE, CELL_LIST, TILES, PIV_SURFACE, GAME_MAP, SCROLL)
     PLAYER.render(PIV_SURFACE, SCROLL)
     MIRA.render(PIV_SURFACE)
     weapon.render( PIV_SURFACE,  weapon.operativeSprite, SCROLL, PLAYER)
     weapon.renderBullets(PIV_SURFACE)
-    if weapon.pepe != None:
-        pygame.draw.circle(PIV_SURFACE, (255,0, 0), weapon.pepe, 20)
-        print(weapon.pepe)
-    engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, PLAYER.weaponList[PLAYER.currentWeapon], MIRA)
+    #engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, PLAYER.weaponList[PLAYER.currentWeapon], MIRA)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
     # recordar que tenemos que retornar tanto EXIT como LAST_MOUSE_POS por que al sustituir su valor, se crea una variable nueva, por lo tanto la referencia no es la misma
