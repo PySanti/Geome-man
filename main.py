@@ -10,10 +10,8 @@ pygame.mixer.init()
 #        implementar colisiones de balas
 #        implementar objetos de ambiente 
 #        implementar outlines 
-#        implementar rotacion de la mira al disparar
 #        implementar admision de armas melee a la clase weapon, que usar el metodo shot no siginifique necesariamente disparar
 #        Mejorar sprite de personaje y de balas
-#        Efecto de salto
 #        Particulas al disparar
 #        Colisiones reales (y adision de sprites)
 #        Revisar otros proyectos y hacerlos portables a Windows (probar)
@@ -29,39 +27,38 @@ pygame.mixer.init()
 #        Modificacion de mira en menu
 
 #   others
-WINDOW_SIZE         =   [1000, 700]
-WINDOW              =   pygame.display.set_mode(WINDOW_SIZE, pygame.RESIZABLE)
-PIV_SURFACE_SIZE    =   [800, 400]
-PIV_SURFACE         =   pygame.Surface(PIV_SURFACE_SIZE)
-COLOR               =   ( 0, 100, 150)
-CLOCK               =   pygame.time.Clock()
-EXIT                =   False
-ASSETS_PATH         =   "material"
-SPEED               =   5
-GRAVITY             =   1
-MAX_GRAVITY         =   10
-JUMP_FORCE          =   -8
-SHOT_SMOOTH         =  20
-FRAMES_PER_IMAGE    =   7
-SOUNDS_PATH         =   ASSETS_PATH + "/efects/"
-BACKGROUND_MUSIC    =   pygame.mixer.music.load(SOUNDS_PATH + "background.wav")
-JUMP_SOUND          =   pygame.mixer.Sound(ASSETS_PATH + "/efects/jump/jump.wav")
-STEPS_SOUND         =   pygame.mixer.Sound(ASSETS_PATH + "/efects/steps/steps.wav")
-PLAYER              =   engine.Player( ASSETS_PATH +  "/animations", FRAMES_PER_IMAGE, STEPS_SOUND, SPEED, JUMP_SOUND)
-MIRA_SMOOTH         =   5
-MIRA_SIZE           =    [30,30]
-MIRA                =   engine.Mira(engine.getImageReady(pygame.image.load("material/mira/shot_mira.png"), MIRA_SIZE, None, True))
-LAST_MOUSE_POS      =   None
-CELL_LIST           =   []
-GAME_MAP            =   engine.loadMap( ASSETS_PATH + "/map.txt")
-TILE_SIZE           =   [16, 16]
-SCROLL              =   [0,0]
-SCROLL_SMOOTH       =   20
-SHOT_LIMIT          = 100
-BULLETS_FRAME       =   500
-WAKE_SIZE           =   [40,20]
-WAKE_ANIMATIONS     =   engine.loadWakeAnimations("material/estela", WAKE_SIZE)
-WAKE_LIST           =   []
+WINDOW_SIZE                             =   [1000, 700]
+WINDOW                                  =   pygame.display.set_mode(WINDOW_SIZE, pygame.RESIZABLE)
+PIV_SURFACE_SIZE                        =   [800, 400]
+PIV_SURFACE                             =   pygame.Surface(PIV_SURFACE_SIZE)
+COLOR                                   =   ( 0, 100, 150)
+CLOCK                                   =   pygame.time.Clock()
+EXIT                                    =   False
+ASSETS_PATH                             =   "material"
+SPEED                                   =   5
+GRAVITY                                 =   1
+MAX_GRAVITY                             =   10
+JUMP_FORCE                              =   -8
+SHOT_SMOOTH                             =  20
+PLAYER_ANIMATIONS_FRAMES_PER_IMAGE      =   7
+SOUNDS_PATH                             =   ASSETS_PATH + "/efects/"
+BACKGROUND_MUSIC                        =   pygame.mixer.music.load(SOUNDS_PATH + "background.wav")
+JUMP_SOUND                              =   pygame.mixer.Sound(ASSETS_PATH + "/efects/jump/jump.wav")
+STEPS_SOUND                             =   pygame.mixer.Sound(ASSETS_PATH + "/efects/steps/steps.wav")
+PLAYER                                  =   engine.Player( ASSETS_PATH +  "/animations", PLAYER_ANIMATIONS_FRAMES_PER_IMAGE, STEPS_SOUND, SPEED, JUMP_SOUND)
+MIRA_SMOOTH                             =   5
+MIRA_SIZE                               =    [30,30]
+MIRA                                    =   engine.Mira(engine.getImageReady(pygame.image.load(ASSETS_PATH + "/mira/shot_mira.png"), MIRA_SIZE, None, True))
+LAST_MOUSE_POS                          =   None
+CELL_LIST                               =   []
+GAME_MAP                                =   engine.loadMap( ASSETS_PATH + "/map.txt")
+TILE_SIZE                               =   [16, 16]
+SCROLL                                  =   [0,0]
+SCROLL_SMOOTH                           =   20
+BULLETS_FRAME                           =   500
+WAKE_SIZE                               =   [40,20]
+WAKE_ANIMATIONS                         =   engine.loadWakeAnimations( ASSETS_PATH + "/estela", WAKE_SIZE)
+WAKE_LIST                               =   []
 
 PLAYER.weaponList.append(engine.Weapon(
         sprite_path = ASSETS_PATH + "/armas/ametralladora_1.png", 
@@ -108,7 +105,7 @@ while not EXIT:
     MIRA.render(PIV_SURFACE)
     weapon.render( PIV_SURFACE,  weapon.operativeSprite, SCROLL, PLAYER)
     weapon.renderBullets(PIV_SURFACE)
-    #engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, PLAYER.weaponList[PLAYER.currentWeapon], MIRA)
+    engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, weapon, MIRA)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
     #   ````````        event handling

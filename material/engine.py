@@ -20,8 +20,6 @@ class Wake:
             self.current_frame += 1
     def render(self, surface, scroll):
         surface.blit(self.animations[self.current_sprite], [self.position[0] - scroll[0], self.position[1] - scroll[1]])
-
-
 class Player:
     def __init__(self, animation_path, frames_per_image, steps_sound, player_speed, jump_sound):
         self.width                  =   30
@@ -249,10 +247,9 @@ class Weapon:
             catetoOpuesto =   proportionalTriangle[1] - weaponPos[1] + mira.sprite.get_height()//2
             catetoAdyacente =  proportionalTriangle[0] - weaponPos[0] + mira.sprite.get_width()//2
             # desviaciones
-            limit = self.shots_per_iter*10
-            catetoOpuesto += randint(1,limit)
-            catetoAdyacente += randint(1,limit)
-
+            #limit = self.shots_per_iter*10
+            #catetoOpuesto += randint(1,limit)
+            #catetoAdyacente += randint(1,limit)
             move = [catetoAdyacente//shot_smooth, catetoOpuesto//shot_smooth]
             self.pend_bullets.append(Bullet(weaponPos, move, self.currentAngle))
             self.amoo -= 1
@@ -492,12 +489,9 @@ def loadWakeAnimations(path, size ):
                 currIndex += 1
     
     return animations
-
 def renderWakes(wake_list, surface, scroll):
     for wake in wake_list:
         wake.render(surface, scroll)
-    
-
 def updateWakes(wake_list, scroll):
     wakeList2 = wake_list.copy()
     for wake in wakeList2:
