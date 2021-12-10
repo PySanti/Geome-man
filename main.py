@@ -5,6 +5,7 @@ from material import engine
 pygame.init()
 pygame.mixer.init()
 
+
 #   todo :
 #        aumentar realismo de sonido de disparo, implementar cambios de precision relativos a la cadencia del arma, impolementar colatazos
 #        implementar colisiones de balas
@@ -66,7 +67,7 @@ CELL_LIST                               =   []
 CLOCK                                   =   pygame.time.Clock()
 
 BULLETS_EXPLOSIONS                      =   []
-BULLETS_EXPLOSION_ANIMATION_SIZE        =    [50,50]
+BULLETS_EXPLOSION_ANIMATION_SIZE        =    [20,20]
 BULLETS_EXPLOSION_ANIMATION             =   engine.loadExplosionAnimation(ASSETS_PATH + "/explosion/animations/", BULLETS_EXPLOSION_ANIMATION_SIZE)
 EXIT                                    =   False
 
@@ -112,6 +113,7 @@ while not EXIT:
     PIV_SURFACE.fill(BACKGROUND_COLOR)
 
     #   ````````        update
+
     engine.updateBulletExplosionAnimation(BULLETS_EXPLOSIONS, len(BULLETS_EXPLOSION_ANIMATION), BULLETS_ANIMATION_FPS)
     weapon = PLAYER.weaponList[PLAYER.currentWeapon]
     engine.updateWakes(WAKE_LIST, SCROLL)
@@ -120,9 +122,9 @@ while not EXIT:
     weapon.updateCurrentRotationAngle(MIRA, SCROLL, PLAYER)
     weapon.updateBulletsPosition(PIV_SURFACE_SIZE, CELL_LIST, SCROLL, BULLETS_EXPLOSIONS)
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
+    print(SCROLL)
 
     #   ````````        render
-    print(len(BULLETS_EXPLOSIONS))
     engine.renderWakes(WAKE_LIST, PIV_SURFACE, SCROLL)
     engine.printMap(TILE_SIZE, CELL_LIST, TILES, PIV_SURFACE, GAME_MAP, SCROLL)
     PLAYER.render(PIV_SURFACE, SCROLL)
@@ -130,7 +132,7 @@ while not EXIT:
     weapon.render( PIV_SURFACE,  weapon.operativeSprite, SCROLL, PLAYER)
     weapon.renderBullets(PIV_SURFACE)
     #engine.triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, weapon, MIRA)
-    engine.renderBulletExplosionAnimation(BULLETS_EXPLOSIONS, PIV_SURFACE, BULLETS_EXPLOSION_ANIMATION)
+    engine.renderBulletExplosionAnimation(BULLETS_EXPLOSIONS, PIV_SURFACE, BULLETS_EXPLOSION_ANIMATION, SCROLL)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
     #   ````````        event handling

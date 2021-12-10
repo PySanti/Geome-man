@@ -10,18 +10,18 @@ class BulletExplosionAnimation:
         self.position = position
         self.current_frame = 0
         self.current_animation = 0
-    
+
     def update(self, frames_per_img):
         if self.current_frame == frames_per_img:
             self.current_frame = 0
             self.current_animation += 1
-        
+
         else:
             self.current_frame += 1
 
-    def render(self, surface, animation_list):
-        surface.blit(animation_list[self.current_animation], self.position )
-        
+    def render(self, surface, animation_list,scroll):
+        surface.blit(animation_list[self.current_animation], [self.position[0], self.position[1]])
+
 
 class Wake:
     def __init__(self, max_frames, position, animations):
@@ -308,7 +308,6 @@ class Weapon:
         for bullet in self.pend_bullets:
             bullet.render(surface, self.bullet_img)
 
-
 class Bullet:
     def __init__(self, initial_pos, move, angle, size):
         self.position = initial_pos
@@ -329,6 +328,8 @@ class Bullet:
         img = pygame.transform.rotate(img, self.angle)
         surface.blit(img, self.rect())
 
+
+
 def updateBulletExplosionAnimation(BulletExplosionList, animationListLen, frames_per_img):
     BulletExplosionList2 = BulletExplosionList
     for explosion in BulletExplosionList2:
@@ -336,11 +337,9 @@ def updateBulletExplosionAnimation(BulletExplosionList, animationListLen, frames
         if explosion.current_animation > animationListLen-1:
             BulletExplosionList.remove(explosion)
 
-
-def renderBulletExplosionAnimation(BulletExplosionAnimationList, surface, animation_list):
+def renderBulletExplosionAnimation(BulletExplosionAnimationList, surface, animation_list, scroll):
     for explosion in BulletExplosionAnimationList:
-        explosion.render(surface, animation_list)
-
+        explosion.render(surface, animation_list, scroll)
 
 def loadExplosionAnimation(path, animation_size):
     animation_list = []
@@ -358,7 +357,7 @@ def loadExplosionAnimation(path, animation_size):
     
     return animation_list
 
-    pass
+
 def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
     windowLimits = [0,0]
     miraPosition = miraRealPos.copy()
@@ -383,6 +382,7 @@ def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
         relativeWeaponPos[0] *= (proportion)
     absoluteProportionalTrianglePos = [relativeWeaponPos[0] + weaponPos[0], relativeWeaponPos[1] + weaponPos[1]]
     return absoluteProportionalTrianglePos
+
 def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos, wake_list, wake_animations, wake_size):
     for event in eventList:
         if event.type == QUIT:
@@ -419,6 +419,7 @@ def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos, wak
             else:
                 last_mouse_pos = None
     return EXIT, last_mouse_pos
+
 def animationDict(size, colorkey, animationSetPath, has_alpha):
     """
         Retorna el diccionario de animaciones obtenido del animationSetPath, las animaciones deben seguir el formato: animationType -> animationDirection -> Animations
@@ -458,6 +459,7 @@ def animationDict(size, colorkey, animationSetPath, has_alpha):
             exit(-1)
     else:
         return animations
+
 def getScrolledPosition(scroll, position ):
     """
         Retorna "position" con "scroll" aplicado
@@ -465,6 +467,7 @@ def getScrolledPosition(scroll, position ):
     position[0] -= scroll[0]
     position[1] -= scroll[1]
     return position
+
 def colisionTest(rect, cells):
     """
         Retorna la lista de "cells" con las cuales esta colisionando "rect"
@@ -474,6 +477,7 @@ def colisionTest(rect, cells):
         if rect.colliderect(cell):
             colisions.append(cell)
     return colisions
+
 def loadMap(path) -> list:
     """
         Recibe la ruta del archivo del mapa y retorna la lista correspondiente  al mapa 
@@ -487,6 +491,7 @@ def loadMap(path) -> list:
                     current_line.append(int(char))
             map_.append(current_line)
     return map_
+
 def printMap(tile_size, cells, tiles, surface, map_, scroll):
     curr_x = 0
     curr_y = 0
@@ -501,11 +506,13 @@ def printMap(tile_size, cells, tiles, surface, map_, scroll):
             curr_x += tile_size[0]
         curr_y += tile_size[1]
         curr_x = 0
+
 def weaponPosition(player, rel_pos):
     """
     Retorna la posicion del arma teniendo en cuenta la posicion del "player" y "rel_pos"
     """
     return [player.rect.x + rel_pos[0], player.rect.y  + rel_pos[1]]
+
 def triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, WEAPON, MIRA):
     weaponPos = getScrolledPosition(SCROLL,weaponPosition(PLAYER, WEAPON.relative_pos))
     miraPosition = [MIRA.position[0] + MIRA.sprite.get_width()//2, MIRA.position[1] + MIRA.sprite.get_height()//2]
@@ -520,6 +527,7 @@ def triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, WEAPON, MIRA):
     pygame.draw.line(PIV_SURFACE, (255,   0, 0), weaponPos, midPos, 2)
     pygame.draw.line(PIV_SURFACE, (255,   0, 0), midPos, miraPosition2, 2)
     pygame.draw.line(PIV_SURFACE, (255,   0, 0), miraPosition2, weaponPos, 2) 
+
 def getImageReady(img, size, colorkey, has_alpha_pixels):
     """
         Modifica la imagen img  con los atributos pasados por parametro
@@ -530,9 +538,11 @@ def getImageReady(img, size, colorkey, has_alpha_pixels):
     convertFunction = img.convert_alpha if has_alpha_pixels else img.convert
     convertFunction()
     return img
+
 def updateScroll(scroll, player, surface_size, scroll_smooth):
     scroll[0] += (player.rect.x - scroll[0] - surface_size[0]//2)//scroll_smooth
     scroll[1] += (player.rect.y - scroll[1] - surface_size[1]//2)//scroll_smooth
+
 def loadWakeAnimations(path, size ):
     animations = {}
     for direction in os.listdir(path):
@@ -549,9 +559,11 @@ def loadWakeAnimations(path, size ):
                 currIndex += 1
     
     return animations
+
 def renderWakes(wake_list, surface, scroll):
     for wake in wake_list:
         wake.render(surface, scroll)
+
 def updateWakes(wake_list, scroll):
     wakeList2 = wake_list.copy()
     for wake in wakeList2:
