@@ -56,7 +56,7 @@ LAST_MOUSE_POS                          =   None
 
 MIRA_SMOOTH                             =   5
 MIRA_SIZE                               =    [30,30]
-MIRA                                    =   engine.Mira(engine.getImageReady(pygame.image.load(ASSETS_PATH + "/mira/shot_mira.png"), MIRA_SIZE, None, True))
+MIRA                                    =   engine.Mira(engine.getImageReady(ASSETS_PATH + "/mira/shot_mira.png", MIRA_SIZE, None, True))
 MAX_GRAVITY                             =   10
 
 
@@ -72,7 +72,7 @@ PLAYER.weaponList.append(engine.Weapon(
         shots_per_iter = 5, 
         relative_pos = [PLAYER.width//1.5, PLAYER.height//1.5], 
         id_ = 0, 
-        bullet_img = engine.getImageReady(pygame.image.load(ASSETS_PATH + "/armas/bullet2.png"), BULLETS_SIZE, None, True), 
+        bullet_img = engine.getImageReady(ASSETS_PATH + "/armas/bullet2.png", BULLETS_SIZE, None, True), 
         no_amoo_sound_path = ASSETS_PATH + "/efects/shots/no amoo.wav",
         is_melee = False))
 
@@ -83,9 +83,9 @@ pygame.mixer.music.play(-1)
 pygame.mouse.set_visible(False)
 
 TILES               = {
-    1 : engine.getImageReady(pygame.image.load(ASSETS_PATH + "/tiles/grass.png"), TILE_SIZE, None, False),
-    2 : engine.getImageReady(pygame.image.load(ASSETS_PATH + "/tiles/dirt.png"), TILE_SIZE, None, False),
-    3 : engine.getImageReady(pygame.image.load(ASSETS_PATH + "/tiles/plant.png"), TILE_SIZE, (255,255,255), True),}
+    1 : engine.getImageReady(ASSETS_PATH + "/tiles/grass.png", TILE_SIZE, None, False),
+    2 : engine.getImageReady(ASSETS_PATH + "/tiles/dirt.png", TILE_SIZE, None, False),
+    3 : engine.getImageReady(ASSETS_PATH + "/tiles/plant.png", TILE_SIZE, (255,255,255), True),}
 
 
 while not EXIT:
@@ -101,7 +101,6 @@ while not EXIT:
     weapon.updateCurrentRotationAngle(MIRA, SCROLL, PLAYER)
     weapon.updateBulletsPosition(PIV_SURFACE_SIZE, CELL_LIST, SCROLL, BULLETS_EXPLOSIONS)
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
-    print(SCROLL)
 
     #   ````````        render
     engine.renderWakes(WAKE_LIST, PIV_SURFACE, SCROLL)

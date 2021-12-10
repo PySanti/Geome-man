@@ -5,6 +5,7 @@ armas:
     implementar colatazos
     implementar admision de armas melee a la clase weapon, que usar el metodo shot no siginifique necesariamente disparar
     Particulas al disparar
+    Mejorar calidad de rotacion del arma
 
 
 ambiente:
@@ -21,5 +22,6 @@ otros:
     Poner menu de configuracion
     Poner icono
     Modificacion de mira en menu
+    Agregar rotacion de la cabeza del personaje, relativa a la posicion de la mira
 
 
