@@ -6,27 +6,6 @@ pygame.init()
 pygame.mixer.init()
 
 
-#   todo :
-#        aumentar realismo de sonido de disparo, implementar cambios de precision relativos a la cadencia del arma, impolementar colatazos
-#        implementar colisiones de balas
-#        implementar objetos de ambiente 
-#        implementar outlines 
-#        implementar admision de armas melee a la clase weapon, que usar el metodo shot no siginifique necesariamente disparar
-#        Mejorar sprite de personaje y de balas
-#        Particulas al disparar
-#        Colisiones reales (y adision de sprites)
-#        Revisar otros proyectos y hacerlos portables a Windows (probar)
-#        Retroceso de arma
-#        Documentar
-#        Arreglar imagen de las celdas (poner imagenes mas de tipo rambo)
-#        Poner balas y particulas al disparar
-#        Poner enemigos
-#        Poner score
-#        Poner menu de configuracion
-#        Poner objetos de fondo
-#        Poner icono
-#        Modificacion de mira en menu
-
 #   others, ordenado alfabeticamente
 ASSETS_PATH                             =   "material"
 

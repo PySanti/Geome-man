@@ -1,0 +1,25 @@
+
+armas:
+    aumentar realismo de sonido de disparo y explosion de disparo
+    implementar cambios de precision relativos a la cadencia del arma
+    implementar colatazos
+    implementar admision de armas melee a la clase weapon, que usar el metodo shot no siginifique necesariamente disparar
+    Particulas al disparar
+
+
+ambiente:
+    implementar objetos de ambiente
+    implementar outlines
+    Mejorar sprite de personaje y de balas
+    Documentar
+    Arreglar imagen de las celdas (poner imagenes mas de tipo rambo)
+
+otros:
+    Revisar otros proyectos y hacerlos portables a Windows (probar)
+    Poner enemigos
+    Poner score
+    Poner menu de configuracion
+    Poner icono
+    Modificacion de mira en menu
+
+
