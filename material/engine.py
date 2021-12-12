@@ -208,7 +208,6 @@ class Player:
         surface.blit(self.animation_manager.current_animation_list[self.animation_manager.current_animation_index], [ self.rect.x - scroll[0], self.rect.y - scroll[1], self.rect.width, self.rect.height])
     def addWeapon(self, weapon):
         self.weapon_list.append(weapon)
-
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
@@ -232,7 +231,6 @@ class Bullet:
             Renderiza la imagen de la bala en "surface"
         """
         surface.blit(self.sprite, self.position)
-
 class Weapon:
     def __init__(self, sprites_path, alcance, cadencia, initial_amoo, attack_sound, is_melee, no_amoo_sound):
         self.sprite_path        = sprites_path
@@ -298,13 +296,9 @@ def updateBullets(bullets_list, cell_list, surface_size, bullets_explosion_list,
                 print("distancia final alcanzada")
                 bullets_list.remove(bullet)
                 bullets_explosion_list.append(BulletExplosionAnimation(bullet.position))
-
-
-
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
-
 def updateBulletExplosionAnimation(BulletExplosionList, animationListLen, frames_per_img):
     """
         Actualiza la informacion de las animaciones de las explosiones de las balas de la lista "BulletExplosionList"
@@ -339,7 +333,6 @@ def loadExplosionAnimation(path, animation_size):
             current_img += 1
     
     return animation_list
-
 def eventHandling(eventList, player,EXIT, jump_force, wake_list, wake_animations, wake_size):
     """
         Funcion creada para la recepcion de todos los eventos en el programa, encargada de llamar a las funciones necesarias relativas al evento en particular

@@ -1,0 +1,5 @@
+- Creacion de Sprites
+- Implementacion de sistema de armas y nuevos sprites
+- Creacion de spriteTester
+- Revision de codigo (fugas de memoria, y documentaciones)
+- Commit
