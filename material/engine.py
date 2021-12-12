@@ -12,11 +12,10 @@ class BulletExplosionAnimation:
         Esto se detecta al actualizar la posicion de las balas en el metodo "update" de la clase "Bullet".
         "WAKE_LIST" permite que a traves de la funcion "updateBulletExplosionAnimation" se actualizen los efectos por cada iteracion
     """
-    def __init__(self, position) -> None:
+    def __init__(self, position):
         self.position = position
         self.current_frame = 0
         self.current_animation = 0
-
     def update(self, frames_per_img):
         """
             Actualiza los valores de las animaciones del efecto
@@ -27,14 +26,11 @@ class BulletExplosionAnimation:
 
         else:
             self.current_frame += 1
-
     def render(self, surface, animation_list,scroll):
         """
             Renderiza la imagen actual de la animacion en "surface"
         """
         surface.blit(animation_list[self.current_animation], [self.position[0], self.position[1]])
-
-
 class Wake:
     """
         Clase creada para el mantenimiento de las estelas provocadas por el personaje al saltar. 
@@ -68,7 +64,7 @@ class Player:
         Clase creada para la administracion del personaje
     """
     def __init__(self, animation_path, frames_per_image, steps_sound, player_speed, jump_sound):
-        self.width                  =   30
+        self.width                  =   60
         self.height                 =   40
         animationSet                =   animationDict([self.width, self.height], (255, 255, 255), animation_path, False)
         self.animation_manager      =   ideas.AnimationController(animationSet, frames_per_image, "idle/right", True)
@@ -80,12 +76,13 @@ class Player:
         self.jump_count             =   0
         self.walking_sound_runing   =   False
         self.shot_sound_runing      =   False
-        self.attacking              =   False
-        self.weaponList             =   []
-        self.currentWeapon          =   0
+        self.attacking              =   {"left" : False, "right" : False}
         self.steps_sound            =   steps_sound
         self.speed                  =   player_speed
         self.jump_sound             =   jump_sound
+        # weapon
+        self.weapon_list            =   []
+        self.current_weapon         =   0
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -96,14 +93,13 @@ class Player:
         elif ((not self.moving()) or (not self.in_floor)) and self.walking_sound_runing:
             self.steps_sound.fadeout(100)
             self.walking_sound_runing = False
-    def updateState(self, mira, scroll, shot_smooth, gravity, max_gravity, cell_list, bullets_frame, bullets_size):
+    def updateState(self, gravity, max_gravity, cell_list):
         """
             Actualiza la posicion del personaje llamando al metodo move, actualiza el momentum (para ello hace uso de los parametros "gravity" y "max_gravity" ).
             Ademas, actualiza las animaciones a traves del metodo animationCheck y updateAnimation, los sonidos a traves del metodo updateSounds.
 
         """
 
-#       acumulacion de movimiento
         player_movement = [0, 0]
         if self.moving_right:
             player_movement[0] += self.speed
@@ -125,17 +121,8 @@ class Player:
                 self.y_momentum = max_gravity//10
             self.in_floor = False
 
-        # actualizacion de informacion de disparos
-        currentWeapon = self.weaponList[self.currentWeapon]
-        if self.attacking: 
-            if currentWeapon.current_shot_iter == currentWeapon.shots_per_iter:
-                currentWeapon.shot(mira, self, scroll, shot_smooth, bullets_frame, bullets_size)
-                currentWeapon.current_shot_iter = 0
-            else:
-                currentWeapon.current_shot_iter += 1
 
-        else:
-            currentWeapon.current_shot_iter = currentWeapon.shots_per_iter
+
 
         # actualizacion de sonidos y animaciones
         self.animationCheck()
@@ -212,189 +199,111 @@ class Player:
                 self.jump_sound.play().fadeout(500)
             elif self.jump_count == 1:
                 self.y_momentum = jump_force*2
+                self.jump_count += 1
 
     def render(self, surface, scroll):
         """
             Renderiza al personaje
         """
         surface.blit(self.animation_manager.current_animation_list[self.animation_manager.current_animation_index], [ self.rect.x - scroll[0], self.rect.y - scroll[1], self.rect.width, self.rect.height])
-class Mira:
-    """
-        Clase creada para el mantenimiento de la mira
-        Nota: recordar que para que la mira pueda moverse con "smooth" el movimiento relativo del mouse no puede aplicarse directamente
-        sino que tiene que agregarse a un "recipiente" (pend_move) del cual se vaya agarrando movimiento poco a poco
-        tomando siempre una cantidad especifica (pend_move[x]//MIRA_SMOOTH])
-    """
+    def addWeapon(self, weapon):
+        self.weapon_list.append(weapon)
 
-    def __init__(self, sprite):
-        self.position           =   [0, 0]
-        self.pend_move          =   [0, 0]
-        self.initialized        =   False
-        self.sprite             =   sprite
-    def move(self, move):
-        """
-            Actualiza el movimiento pendiente de la mira
-        """
-        self.pend_move[0] += move[0]
-        self.pend_move[1] += move[1]
-    def updateState(self, smooth):
-        """
-            Actualiza la posicion de la mira con el movimiento pendiente
-        """
-        self.position[0]  += (self.pend_move[0]//smooth)
-        self.position[1]  += (self.pend_move[1]//smooth)
-        self.pend_move[0] -= (self.pend_move[0]//smooth)
-        self.pend_move[1] -= (self.pend_move[1]//smooth)
-    def render(self, surface):
-        """
-            Renderiza la mira
-        """
-        surface.blit(self.sprite, self.position)
-
-class Weapon:
-    """
-        Clase creada para el uso y mantenimiento del arma del personaje
-        Nota: recordar que la idea a futuro es que el usuario pueda usar varias armas, es por eso que se solicitan tantos datos. 
-        Ademas recordar que el "arma actual" la lleva el personaje, no puede ser una variable global.
-    """
-
-    def __init__(self, sprite_path, sound_effect_path, volume, size, has_alpha_pixels, amoo, shots_per_iter, relative_pos, id_, bullet_img, no_amoo_sound_path, is_melee):
-        self.size               = size
-        self.sprite             = pygame.transform.scale(pygame.image.load(sprite_path), size)
-        self.amoo               = amoo
-        self.shots_per_iter     = shots_per_iter
-        self.current_shot_iter  = 0
-        self.relative_pos       =  relative_pos
-        self.id                 = id_
-        self.pend_bullets       =   []
-        self.sound_effect       = pygame.mixer.Sound(sound_effect_path)
-        self.no_amoo_sound      = pygame.mixer.Sound(no_amoo_sound_path)
-        self.no_amoo_sound.set_volume(0.2)
-        self.sound_effect.set_volume(volume)
-        self.currentOrientation = "right"
-        self.bullet_img         =   bullet_img
-        self.flipping_dict      = { "right" : True, "left" : False }
-        self.operativesprite    = None
-        self.is_melee           = is_melee
-        convertFunction = self.sprite.convert_alpha if has_alpha_pixels else self.sprite.convert
-        convertFunction()
-    def updateCurrentRotationAngle(self, mira, scroll, player):
-        """
-            Actualiza el angulo de rotacion del arma y hace mantenimiento al diccionario de flipping, necesario para la orientacion del
-            arma (esto ultimo llamando a la funcion updateFippingDict)
-        """
-        current_pos = getScrolledPosition(scroll, weaponPosition(player, self.relative_pos))
-        catetoOpuesto   = current_pos[1]   - mira.position[1] - mira.sprite.get_height()//2
-        catetoAdyacente = mira.position[0] - current_pos[0] - mira.sprite.get_width()//2
-        if catetoAdyacente != 0:
-            self.currentAngle = math.atan(catetoOpuesto/catetoAdyacente)*50
-            rotated_sprite =  pygame.transform.rotate(self.sprite,  self.currentAngle)
-        else:
-            self.currentAngle = 75
-            rotated_sprite =  pygame.transform.rotate(self.sprite,  75)
-        self.updateFlippingDict(player, scroll, mira)
-        self.operativeSprite = rotated_sprite
-
-    def updateFlippingDict(self, player, scroll, mira):
-        """
-            Actualiza el FippingDict, diccionario necesario para el mantenimiento de la orientacion del arma 
-        """
-        orientationLimit = player.rect.x - scroll[0] + (player.width//1.5)
-        if (mira.position[0] > orientationLimit) and self.currentOrientation != "right":
-            self.currentOrientation = "right"
-        elif (mira.position[0] < orientationLimit) and self.currentOrientation != "left":
-            self.currentOrientation = "left"
-        if not self.flipping_dict[self.currentOrientation]:
-            self.flipping_dict["left" if self.currentOrientation == "right" else "right"] = False
-            self.flipping_dict[self.currentOrientation] = True
-            self.sprite = pygame.transform.flip(self.sprite, True, False)
-    def render(self, surface, sprite,  scroll, player):
-        """
-            Renderiza el arma actual
-        """
-        current_pos = getScrolledPosition(scroll, weaponPosition(player, self.relative_pos))
-        surface.blit(sprite, [current_pos[0] - (sprite.get_width()//2), current_pos[1] - (sprite.get_height()//2)])
-    def shot(self, mira, player, scroll, shot_smooth, bullets_frame, bullets_size):
-        """
-            Crea un objeto Bullet y lo agrega a la "pend_bullets" del arma en caso de que la misma tenga balas, ademas ejecuta el "soundEffect" del arma
-        """
-        if self.amoo > 0:
-            weaponPos = getScrolledPosition(scroll, weaponPosition(player, self.relative_pos))
-            proportionalTriangle = proportionalLimitTriangle(mira.position, weaponPos, bullets_frame)
-            catetoOpuesto =   proportionalTriangle[1] - weaponPos[1] + mira.sprite.get_height()//2
-            catetoAdyacente =  proportionalTriangle[0] - weaponPos[0] + mira.sprite.get_width()//2
-            # desviaciones
-            #limit = self.shots_per_iter*10
-            #catetoOpuesto += randint(1,limit)
-            #catetoAdyacente += randint(1,limit)
-            move = [catetoAdyacente//shot_smooth, catetoOpuesto//shot_smooth]
-            self.pend_bullets.append(Bullet(weaponPos, move, self.currentAngle, bullets_size))
-            self.amoo -= 1
-            random = randint(1,3)
-            if  random == 2:
-                self.sound_effect.set_volume(0.5)
-                self.sound_effect.play().fadeout(500)
-            elif random == 3:
-                self.sound_effect.set_volume(0.4)
-                self.sound_effect.play().fadeout(500)
-            else:
-                self.sound_effect.set_volume(0.6)
-                self.sound_effect.play().fadeout(500)
-        elif self.amoo == 0:
-            self.no_amoo_sound.play().fadeout(500)
-            pass
-    def updateBulletsPosition(self,  surface_size, cells, scroll, bullets_explosion_list):
-        """
-            Recorre la lista de balas del arma "self", elimina las balas cuya posicion no sea "renderizable",
-            actualiza la posicion de aquellas que si lo sean. Ademas elimina las balas si estan colisionando con algo y crea un objeto BulletExplosionAnimation
-            y lo agrega en la lista "bullets_explosion_list"
-        """
-        piv_bullet_list = self.pend_bullets
-        # eliminamos las balas que esten por fuera de los limites y aquellas que no, actualizamos su posicion
-        for bullet in self.pend_bullets:
-            if ( ((bullet.position[0] + bullet.move[0]) > surface_size[0]) or  ((bullet.position[0] + bullet.move[0]) < 0)) or ((bullet.position[1] < 0) or ((bullet.position[1] + bullet.move[1]) > surface_size[1]) ):
-                piv_bullet_list.remove(bullet)
-            else:
-                bullet.updatePosition()
-                colisions = colisionTest(pygame.Rect([bullet.position[0]+scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]]),cells)
-                if len(colisions) > 0:
-                    piv_bullet_list.remove(bullet)
-                    bullets_explosion_list.append(BulletExplosionAnimation(bullet.position))
-    def renderBullets(self, surface):
-        """
-            Recorre la lista de pend_bullets y las renderiza uno a uno
-        """
-        for bullet in self.pend_bullets:
-            bullet.render(surface, self.bullet_img)
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
     """
-    def __init__(self, initial_pos, move, angle, size):
-        self.position = initial_pos
-        self.move = move
-        self.angle = angle
-        self.size = size
-    def rect(self):
-        """
-            Retorna el rectangulo correspondiente a la posicion de la bala, esto es necesario para la correcion de las colisiones
-        """
-        return pygame.Rect(self.position[0], self.position[1], self.size[0], self.size[1])
+    def __init__(self, initial_pos, sprite, move, size, alcance):
+        self.position   = initial_pos
+        self.move       = move
+        self.sprite     = sprite
+        self.size       = size
+        self.alcance    = alcance
+        self.distanciaRecorrida = 0
     def updatePosition(self):
         """
-        Actualiza la posicion de la bala self usando el atributo move
+        Actualiza la posicion de la bala self usando el atributo move, ademas actualiza la distancia recorrida por la bala
         """
         self.position[0] += self.move[0]
         self.position[1] += self.move[1]
-    def render(self, surface, bullet_img):
+        self.distanciaRecorrida += abs(self.move[0])
+    def render(self, surface):
         """
             Renderiza la imagen de la bala en "surface"
         """
-        img = bullet_img.copy()
-        img = pygame.transform.rotate(img, self.angle)
-        surface.blit(img, self.rect())
+        surface.blit(self.sprite, self.position)
+
+class Weapon:
+    def __init__(self, sprites_path, alcance, cadencia, initial_amoo, attack_sound, is_melee, no_amoo_sound):
+        self.sprite_path        = sprites_path
+        self.alcance            = alcance
+        self.cadencia           = cadencia
+        self.amoo               = initial_amoo
+        self.attack_sound       = attack_sound
+        self.is_melee           = is_melee
+        self.current_shot_iter  = cadencia
+        self.no_amoo_sound      =   no_amoo_sound
+    def attack(self, player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+        if self.amoo > 0:
+            if (player.attacking["right"]):
+                bulletInitialPos    = getScrolledPosition(scroll, [player.rect.right + 10, player.rect.bottom - player.height//2])
+                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [bullets_speed, 0], bullets_size, self.alcance)
+                bullets_list.append(new_bullet)
+
+            elif (player.attacking["left"]):
+                bulletInitialPos    = getScrolledPosition(scroll, [player.rect.left - 10, player.rect.bottom - player.height//2])
+                bullet_sprite       = pygame.transform.flip(bullet_sprite, True, False)
+                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [-bullets_speed, 0], bullets_size, self.alcance)
+                bullets_list.append(new_bullet)
+            self.amoo -= 1
+            self.attack_sound.set_volume(0.5)
+            self.attack_sound.play().fadeout(500)
+
+        else:
+            self.no_amoo_sound.set_volume(0.5)
+            self.no_amoo_sound.play().fadeout(500)
+    def updateShotsInfo(self, player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+        if (not self.is_melee) and (player.attacking["right"] or player.attacking["left"]) and (self.current_shot_iter == self.cadencia):
+            self.attack(player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size)
+            self.current_shot_iter = 0
+
+        elif not (player.attacking["right"] or player.attacking["left"]):
+            self.current_shot_iter = self.cadencia
+
+        elif self.current_shot_iter != self.cadencia:
+            self.current_shot_iter += 1
 
 
+
+def updateBullets(bullets_list, cell_list, surface_size, bullets_explosion_list, scroll):
+    """
+        Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
+        cuyo alcance haya terminado
+    """
+    copy_list = bullets_list.copy()
+    for bullet in copy_list:
+        if  (surface_size[0] < bullet.position[0]) or (bullet.position[0] < 0):
+            bullets_list.remove(bullet)
+        else:
+            bullet.updatePosition()
+            colisions = colisionTest(pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]]), cell_list)
+            if len(colisions) > 0:
+                print("colision de bala")
+                bullets_list.remove(bullet)
+                colied_tile = colisions[0]
+                colision_position = [colied_tile.x + colied_tile.width//2, colied_tile.y + colied_tile.height//2]
+                bullets_explosion_list.append(BulletExplosionAnimation(colision_position))
+
+            elif bullet.distanciaRecorrida > bullet.alcance:
+                print("distancia final alcanzada")
+                bullets_list.remove(bullet)
+                bullets_explosion_list.append(BulletExplosionAnimation(bullet.position))
+
+
+
+def renderBullets(bullets_list, surface):
+    for bullet in bullets_list:
+        bullet.render(surface)
 
 def updateBulletExplosionAnimation(BulletExplosionList, animationListLen, frames_per_img):
     """
@@ -431,35 +340,7 @@ def loadExplosionAnimation(path, animation_size):
     
     return animation_list
 
-def proportionalLimitTriangle(miraRealPos, weaponPos, bullets_frame):
-    """
-        Retorna el punto de conexion del triangulo limite proporcional  creado por la mira, y el arma. Necesario para establecer una velocidad fija y 
-        absoluta de las balas independiente de la posicion de la mira
-    """
-    windowLimits = [0,0]
-    miraPosition = miraRealPos.copy()
-    if miraPosition[1] < weaponPos[1]:
-        windowLimits[1] = -bullets_frame
-    else:
-        windowLimits[1] = bullets_frame
-    if miraPosition[0] < weaponPos[0]:
-        windowLimits[0] = -bullets_frame
-    else:
-        windowLimits[0] = bullets_frame
-    relativeWeaponPos = [(weaponPos[0] - miraPosition[0]),(weaponPos[1] - miraPosition[1])]
-    relativeWeaponPos2 = relativeWeaponPos.copy()
-    spaceDiff = [(abs(windowLimits[0]) - abs( relativeWeaponPos[0])),(abs(windowLimits[1]) - abs( relativeWeaponPos[1]))]
-    if spaceDiff[0] < spaceDiff[1]:
-        relativeWeaponPos[0] = windowLimits[0]
-        proportion = (relativeWeaponPos[0]/relativeWeaponPos2[0])
-        relativeWeaponPos[1] *= (proportion)
-    else:
-        relativeWeaponPos[1] = windowLimits[1]
-        proportion = (relativeWeaponPos[1]/relativeWeaponPos2[1])
-        relativeWeaponPos[0] *= (proportion)
-    absoluteProportionalTrianglePos = [relativeWeaponPos[0] + weaponPos[0], relativeWeaponPos[1] + weaponPos[1]]
-    return absoluteProportionalTrianglePos
-def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos, wake_list, wake_animations, wake_size):
+def eventHandling(eventList, player,EXIT, jump_force, wake_list, wake_animations, wake_size):
     """
         Funcion creada para la recepcion de todos los eventos en el programa, encargada de llamar a las funciones necesarias relativas al evento en particular
 
@@ -476,31 +357,17 @@ def eventHandling(eventList, player, mira, EXIT, jump_force, last_mouse_pos, wak
                 player.moving_right = (event.type == KEYDOWN)
             if event.key == K_a:
                 player.moving_left = (event.type == KEYDOWN)
-        if (event.type == MOUSEBUTTONDOWN) or (event.type == MOUSEBUTTONUP):
-            if (event.button == 3) and (event.type == MOUSEBUTTONDOWN):
+
+            if event.key == K_SEMICOLON:
+                player.attacking["right"] = (event.type == KEYDOWN)
+            if event.key == K_k:
+                player.attacking["left"] = (event.type == KEYDOWN)
+            if event.key == K_w and event.type == KEYDOWN:
                 if player.jump_count == 0 and player.in_floor:
                     animation_direction = player.animation_manager.current_animation_name.split("/")[1]
                     wake_list.append(Wake(3, [player.rect.x, player.rect.y + player.height - wake_size[1]], wake_animations["right" if animation_direction == "left" else "left"]))
                 player.jump(jump_force)
-            elif (event.button == 1):
-                player.attacking = (event.type == MOUSEBUTTONDOWN)
-        if event.type == MOUSEMOTION:
-            if not mira.initialized :
-                mira.position = list(event.pos)
-                mira.initialized = True
-            else:
-                if  last_mouse_pos != None:
-                    mira.move([ event.pos[0] - last_mouse_pos[0] ,  event.pos[1] - last_mouse_pos[1]])
-                    last_mouse_pos = None
-                else:
-                    mira.move(event.rel)
-        if event.type == WINDOWLEAVE:
-            hipoteticalMouseMoIndex = eventList.index(event) - 2
-            if eventList[hipoteticalMouseMoIndex].type == MOUSEMOTION:
-                last_mouse_pos = eventList[hipoteticalMouseMoIndex].pos
-            else:
-                last_mouse_pos = None
-    return EXIT, last_mouse_pos
+    return EXIT
 def animationDict(size, colorkey, animationSetPath, has_alpha):
     """
         Retorna el diccionario de animaciones obtenido del animationSetPath, las animaciones deben seguir el formato: animationType -> animationDirection -> Animations
@@ -586,28 +453,6 @@ def printMap(tile_size, cells, tiles, surface, map_, scroll):
             curr_x += tile_size[0]
         curr_y += tile_size[1]
         curr_x = 0
-def weaponPosition(player, rel_pos):
-    """
-    Retorna la posicion del arma teniendo en cuenta la posicion del "player" y "rel_pos"
-    """
-    return [player.rect.x + rel_pos[0], player.rect.y  + rel_pos[1]]
-def triangleProve(PIV_SURFACE, BULLETS_FRAME, SCROLL, PLAYER, WEAPON, MIRA):
-    """
-        Funcion creada para visualizar los triangulos utilizados para la obtencion de los angulos necesarios para basicamente todo xd
-    """
-    weaponPos = getScrolledPosition(SCROLL,weaponPosition(PLAYER, WEAPON.relative_pos))
-    miraPosition = [MIRA.position[0] + MIRA.sprite.get_width()//2, MIRA.position[1] + MIRA.sprite.get_height()//2]
-    midPos = [miraPosition[0], weaponPos[1]]
-    pygame.draw.line(PIV_SURFACE, (0, 255, 0), weaponPos, midPos, 2)
-    pygame.draw.line(PIV_SURFACE, (0, 255, 0), midPos, miraPosition, 2)
-    pygame.draw.line(PIV_SURFACE, (0, 255, 0), miraPosition, weaponPos, 2) 
-
-    miraPosition2 = proportionalLimitTriangle(miraPosition, weaponPos, BULLETS_FRAME)
-    midPos = [miraPosition2[0], weaponPos[1]]
-
-    pygame.draw.line(PIV_SURFACE, (255,   0, 0), weaponPos, midPos, 2)
-    pygame.draw.line(PIV_SURFACE, (255,   0, 0), midPos, miraPosition2, 2)
-    pygame.draw.line(PIV_SURFACE, (255,   0, 0), miraPosition2, weaponPos, 2) 
 def getImageReady(path, size, colorkey, has_alpha_pixels):
     """
         Modifica la imagen img  con los atributos pasados por parametro
