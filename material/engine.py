@@ -1,9 +1,8 @@
 import pygame
 from pygame import color
 from pygame.locals import *
-import ideas
 import os
-from random import randint, random
+from random import randint
 
 class BulletExplosionAnimation:
     """
@@ -61,12 +60,12 @@ class Wake:
         surface.blit(self.animations[self.current_sprite], [self.position[0] - scroll[0], self.position[1] - scroll[1]])
 class Player:
     """
-        Clase creada para la administracion del personaje
+        Clase creada para la administracion del personaje y datos del arma
     """
-    def __init__(self, steps_sound, player_speed, jump_sound, initial_weapon, size):
+    def __init__(self, steps_sound, player_speed, jump_sound, animation_manager, size, cadencia_de_arma, no_amoo_sound_path, alcance, attack_sound_path):
         self.width                  =   size[0]
         self.height                 =   size[1]
-        self.rect                   =   pygame.Rect([200,-10, self.width, self.height])
+        self.rect                   =   pygame.Rect([200,-100, self.width, self.height])
         self.y_momentum             =   0
         self.moving_right           =   False
         self.moving_left            =   False
@@ -78,18 +77,23 @@ class Player:
         self.steps_sound            =   steps_sound
         self.speed                  =   player_speed
         self.jump_sound             =   jump_sound
-        # weapon
-        self.weapon_list            =   []
-        self.current_weapon         =   0
-        self.addWeapon(initial_weapon)
+        self.animation_manager      =   animation_manager
+        self.amoo                   =   1000
+        self.cadencia               =   cadencia_de_arma
+        self.no_amoo_sound          =   pygame.mixer.Sound(no_amoo_sound_path)
+        self.alcance                =   alcance
+        self.attack_sound           =   pygame.mixer.Sound(attack_sound_path)
+        self.look_back_couter       =   0
+        self.look_back_max_counter  =   None
+        self.last_direction         =   None
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
         """
-        if self.moving() and self.in_floor and (not self.walking_sound_runing):
+        if (self.moving()) and (self.in_floor) and (not self.walking_sound_runing):
             self.walking_sound_runing = True
             self.steps_sound.play(-1)
-        elif ((not self.moving()) or (not self.in_floor)) and self.walking_sound_runing:
+        elif ((not self.moving()) or (not self.in_floor)) and (self.walking_sound_runing):
             self.steps_sound.fadeout(100)
             self.walking_sound_runing = False
     def updateState(self, gravity, max_gravity, cell_list):
@@ -98,7 +102,6 @@ class Player:
             Ademas, actualiza las animaciones a traves del metodo animationCheck y updateAnimation, los sonidos a traves del metodo updateSounds.
 
         """
-
         player_movement = [0, 0]
         if self.moving_right:
             player_movement[0] += self.speed
@@ -125,9 +128,28 @@ class Player:
 
         # actualizacion de sonidos y animaciones
         self.animationCheck()
-        self.weapon_list[self.current_weapon].animation_manager.updateAnimation()
+        self.animation_manager.updateAnimation()
         self.updateSounds()
+        self.updateLastDirection()
+    def attack(self, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+        if self.amoo > 0:
+            if (self.attacking["right"]):
+                bulletInitialPos    = getScrolledPosition(scroll, [self.rect.right + 10, self.rect.bottom - self.height//2])
+                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [bullets_speed, 0], bullets_size, self.alcance)
+                bullets_list.append(new_bullet)
 
+            elif (self.attacking["left"]):
+                bulletInitialPos    = getScrolledPosition(scroll, [self.rect.left - 10, self.rect.bottom - self.height//2])
+                bullet_sprite       = pygame.transform.flip(bullet_sprite, True, False)
+                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [-bullets_speed, 0], bullets_size, self.alcance)
+                bullets_list.append(new_bullet)
+            self.amoo -= 1
+            self.attack_sound.set_volume(0.5)
+            self.attack_sound.play().fadeout(500)
+
+        else:
+            self.no_amoo_sound.set_volume(0.5)
+            self.no_amoo_sound.play().fadeout(500)
     def moving(self):
         """
             Retorna True en caso de que el personaje se este moviendo
@@ -137,18 +159,27 @@ class Player:
         """
             Cambia las animaciones en caso de que sea necesario cambiarlas teniendo en cuenta el estado del personaje
         """
-        animation_manager = self.weapon_list[self.current_weapon].animation_manager
+        animation_manager = self.animation_manager
         if ("stand" in animation_manager.current_animation_name) and (not "attack" in animation_manager.current_animation_name):
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) -1 )) :
                 if (animation_manager.current_animation_name == "stand_1") :
                     random_ = randint(1,50)
                     if  random_ in [2, 3]:
                         animation_manager.changeAnimation("stand_2" if random_ == 2 else "stand_3")
+                        if random_ == 3:
+                            self.look_back_couter += 1
+                            self.look_back_max_counter = randint(1,5)
+                elif self.look_back_couter > 0:
+                    animation_manager.changeAnimation("stand_3")
+                    self.look_back_couter += 1
+                    if self.look_back_couter > self.look_back_max_counter:
+                        self.look_back_couter = 0
+
                 else:
                     animation_manager.changeAnimation("stand_1" )
         if (self.moving()) and (self.in_floor) and (animation_manager.current_animation_name not in ["run", "attacking_running_right", "attacking_running_left"]):
-                animation_manager.changeAnimation("run")
-        elif ((not self.moving()) and (not (self.attacking["right"] or self.attacking["left"])) and ("stand" != animation_manager.current_animation_name )) and (self.in_floor):
+            animation_manager.changeAnimation("run")
+        elif ((not self.moving()) and (not (self.attacking["right"] or self.attacking["left"])) and ("stand" not in animation_manager.current_animation_name )) and (self.in_floor):
             animation_manager.changeAnimation("stand_1")
         if (not self.in_floor) and ("attack" not in animation_manager.current_animation_name):
             if self.y_momentum < 0:
@@ -161,10 +192,15 @@ class Player:
                     animation_manager.changeAnimation("jump_momentum_positivo")
                 elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1)):
                     animation_manager.current_animation_frame = 0
-        if ((self.attacking["right"] or self.attacking["left"]) and ("stand" in animation_manager.current_animation_name)) or (animation_manager.current_animation_name == "attacking_stand"):
+        if (((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and ("stand" in animation_manager.current_animation_name)) or (animation_manager.current_animation_name == "attacking_stand"):
             if animation_manager.current_animation_name != "attacking_stand":
                 animation_manager.changeAnimation("attacking_stand")
-        if ((self.attacking["right"] or self.attacking["left"]) and (animation_manager.current_animation_name == "run")) or (animation_manager.current_animation_name in ["attacking_running_right","attacking_running_left"]):
+            elif animation_manager.current_animation_index == 3 and (self.attacking["right"] or self.attacking["left"]):
+                animation_manager.changeAnimation("attacking_stand")
+            elif ( animation_manager.current_animation_name == "attacking_stand") and (not (self.attacking["right"] or self.attacking["left"])):
+                animation_manager.changeAnimation("stand_1")
+
+        if ((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and (animation_manager.current_animation_name == "run") or (animation_manager.current_animation_name in ["attacking_running_right","attacking_running_left"]):
             new_animation = None
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1 )) and (not (self.attacking["right"] or self.attacking["left"])) :
                 animation_manager.changeAnimation("run")
@@ -175,15 +211,26 @@ class Player:
                     new_animation = "attacking_running_left"
                 if (new_animation != animation_manager.current_animation_name) and (new_animation != None):
                     animation_manager.changeAnimation(new_animation)
-        if ((self.attacking["right"] or self.attacking["left"]) and (not self.in_floor)) :
+        if  ((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and (not self.in_floor) :
             new_animation = None
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1 )) and (not (self.attacking["right"] or self.attacking["left"])) :
                 animation_manager.changeAnimation("jump_momentum_positivo" if self.y_momentum > 0 else "jump_momentum_negativo")
             else:
                 if (self.attacking["right"] or self.attacking["left"])  and (animation_manager.current_animation_name != "attacking_jumping"):
                     animation_manager.changeAnimation("attacking_jumping")
+    def updateShotsInfo(self, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+        """
+            Actualiza los datos para disparar, y dispara en caso de que las condiciones esten dadas
+        """
+        if (self.attacking["right"] or self.attacking["left"]) and (self.current_shot_iter == self.cadencia):
+            self.attack(scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size)
+            self.current_shot_iter = 0
 
+        elif not (self.attacking["right"] or self.attacking["left"]):
+            self.current_shot_iter = self.cadencia
 
+        elif self.current_shot_iter != self.cadencia:
+            self.current_shot_iter += 1
     def move(self, player_movement, cell_list) -> dict:
         """
             Mueve el personaje usando el player_movement recibido por parametro, retorna un diccionario que simboliza las direcciones en las cuales
@@ -234,16 +281,20 @@ class Player:
         """
             Renderiza al personaje
         """
-        current_weapon = self.weapon_list[self.current_weapon]
-        current_index  =   current_weapon.animation_manager.current_animation_index
-        current_sprite = current_weapon.animation_manager.current_animation_list[current_index]
-        print(f"{current_weapon.animation_manager.current_animation_name:20} -> {current_index}/{len(current_weapon.animation_manager.current_animation_list)-1}")
-        if (self.moving_left and self.attacking["left"]) or (self.attacking["left"] and self.moving_right) or (self.moving_left and (not self.attacking["right"])) or (self.attacking["left"] and (not self.moving_right)) :
+        current_index  =   self.animation_manager.current_animation_index
+        current_sprite = self.animation_manager.current_animation_list[current_index]
+        print(f"{self.animation_manager.current_animation_name:20} -> {current_index}/{len(self.animation_manager.current_animation_list)-1}")
+        if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
         surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1], self.rect.width, self.rect.height])
-    def addWeapon(self, weapon):
-        self.weapon_list.append(weapon)
-
+    def updateLastDirection(self):
+        """
+            Actualiza el atributo "last_direction" dependiendo de las condiciones
+        """
+        if (self.moving_left and self.attacking["left"]) or (self.attacking["left"] and self.moving_right) or (self.moving_left and (not self.attacking["right"])) or (self.attacking["left"] and (not self.moving_right)):
+            self.last_direction = "left"
+        elif (self.moving_right and self.attacking["right"]) or (self.attacking["right"] and self.moving_left) or (self.moving_right and (not self.attacking["left"])) or (self.attacking["right"] and (not self.moving_left)):
+            self.last_direction = "right"
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
@@ -267,49 +318,6 @@ class Bullet:
             Renderiza la imagen de la bala en "surface"
         """
         surface.blit(self.sprite, self.position)
-class Weapon:
-    def __init__(self, alcance, cadencia, initial_amoo, attack_sound, is_melee, no_amoo_sound, animation_manager):
-        self.animation_manager  = animation_manager
-        self.is_melee           = is_melee
-        self.cadencia           = cadencia
-        self.attack_sound       = attack_sound
-        self.current_shot_iter  = cadencia
-        self.no_amoo_sound      =   no_amoo_sound
-        if not is_melee:
-            self.alcance            = alcance
-            self.amoo               = initial_amoo
-    def attack(self, player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
-        if self.is_melee:
-            pass
-        else: 
-            if self.amoo > 0:
-                if (player.attacking["right"]):
-                    bulletInitialPos    = getScrolledPosition(scroll, [player.rect.right + 10, player.rect.bottom - player.height//2])
-                    new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [bullets_speed, 0], bullets_size, self.alcance)
-                    bullets_list.append(new_bullet)
-
-                elif (player.attacking["left"]):
-                    bulletInitialPos    = getScrolledPosition(scroll, [player.rect.left - 10, player.rect.bottom - player.height//2])
-                    bullet_sprite       = pygame.transform.flip(bullet_sprite, True, False)
-                    new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [-bullets_speed, 0], bullets_size, self.alcance)
-                    bullets_list.append(new_bullet)
-                self.amoo -= 1
-                self.attack_sound.set_volume(0.5)
-                self.attack_sound.play().fadeout(500)
-
-            else:
-                self.no_amoo_sound.set_volume(0.5)
-                self.no_amoo_sound.play().fadeout(500)
-    def updateShotsInfo(self, player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
-        if (not self.is_melee) and (player.attacking["right"] or player.attacking["left"]) and (self.current_shot_iter == self.cadencia):
-            self.attack(player, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size)
-            self.current_shot_iter = 0
-
-        elif not (player.attacking["right"] or player.attacking["left"]):
-            self.current_shot_iter = self.cadencia
-
-        elif self.current_shot_iter != self.cadencia:
-            self.current_shot_iter += 1
 
 
 
@@ -399,7 +407,7 @@ def eventHandling(eventList, player,EXIT, jump_force, wake_list, wake_animations
                     wake_list.append(Wake(3, [player.rect.x, player.rect.y + player.height - wake_size[1]], wake_animations["right" if animation_direction == "left" else "left"]))
                 player.jump(jump_force)
     return EXIT
-def animationDict(size_dict, colorkey, animationSetPath, has_alpha):
+def animationDict(size, colorkey, animationSetPath, has_alpha):
     """
         Retorna el diccionario de animaciones obtenido del animationSetPath, las animaciones deben seguir el formato: animationType -> animationDirection -> Animations
     """
@@ -413,7 +421,7 @@ def animationDict(size_dict, colorkey, animationSetPath, has_alpha):
             while (counter != len(animationSet) + 1)  :
                 if str(counter) in animationSet[index]:
                     sprite_path = f"{animationSetPath}/{animationType}/animation/{animationSet[index]}"
-                    sprite      = getImageReady(sprite_path,size_dict[animationType], colorkey, has_alpha )
+                    sprite      = getImageReady(sprite_path,size, colorkey, has_alpha )
                     animations[animationType].append(sprite)
                     index       = 0
                     counter     += 1

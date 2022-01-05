@@ -6,8 +6,6 @@ from material import engine
 pygame.init()
 pygame.mixer.init()
 
-# perfeccionar stand_3, run, jump, attacking_stand
-# agregar ultima direccion de movimiento y ataque
 
 #   others, ordenado alfabeticamente
 ASSETS_PATH                             =   "material"
@@ -36,29 +34,23 @@ JUMP_FORCE                              =   -8
 PIV_SURFACE_SIZE                        =   [800, 400]
 PLAYER_ANIMATIONS_FRAMES_PER_IMAGE      =   7
 PIV_SURFACE                             =   pygame.Surface(PIV_SURFACE_SIZE)
-PLAYER_SIZE                             =   [60,90]
+PLAYER_SIZE                             =   [80,90]
 PLAYER_ANIMATION_FPS                    =   4
-size_dict                               =   {
-    "stand_1" : PLAYER_SIZE,
-    "stand_2" : PLAYER_SIZE,
-    "stand_3" : PLAYER_SIZE,
-    "attacking_jumping" : [PLAYER_SIZE[0] + 20, PLAYER_SIZE[1]],
-    "attacking_running_left" : [PLAYER_SIZE[0] + 20, PLAYER_SIZE[1]],
-    "attacking_running_right" : [PLAYER_SIZE[0] + 20, PLAYER_SIZE[1]],
-    "attacking_stand" : [PLAYER_SIZE[0] + 20, PLAYER_SIZE[1]],
-    "jump_momentum_negativo" : [PLAYER_SIZE[0], PLAYER_SIZE[1]],
-    "jump_momentum_positivo" : [PLAYER_SIZE[0], PLAYER_SIZE[1]],
-    "run" : [PLAYER_SIZE[0] + 15, PLAYER_SIZE[1]],
-}
-animation_manager                       =   AnimationController(engine.animationDict(size_dict, None, "material/animations/no_gun", True),PLAYER_ANIMATION_FPS, "stand_1",False )
-initial_weapon                          =   engine.Weapon(None, 5, None, None, True, None, animation_manager)
-PLAYER                                  =   engine.Player( STEPS_SOUND, SPEED, JUMP_SOUND, initial_weapon, PLAYER_SIZE)
+PLAYER                                  =   engine.Player( 
+    steps_sound         = STEPS_SOUND, 
+    player_speed        = SPEED,
+    jump_sound          = JUMP_SOUND, 
+    animation_manager   = AnimationController(engine.animationDict(PLAYER_SIZE, None, "material/animations/", True),PLAYER_ANIMATION_FPS, "stand_1",False ), 
+    size                = PLAYER_SIZE,
+    cadencia_de_arma    = 5,
+    no_amoo_sound_path  = "material/efects/shots/no amoo.wav",
+    alcance             = 100,
+    attack_sound_path   = "material/efects/shots/shot.wav")
 
 
 BACKGROUND_COLOR                        =   ( 0, 100, 150)
 BACKGROUND_MUSIC                        =   pygame.mixer.music.load(SOUNDS_PATH + "background.wav")
 BULLETS_SIZE                            =   [20, 3]
-BULLETS_ANIMATION_FPS                   =   3
 BULLET_SPRITE                           =   engine.getImageReady("material/armas/bullet.png", BULLETS_SIZE, None, True)
 BULLETS_LIST                            =   []
 BULLETS_SPEED                           =  20
@@ -67,6 +59,7 @@ CLOCK                                   =   pygame.time.Clock()
 
 BULLETS_EXPLOSIONS                      =   []
 BULLETS_EXPLOSION_ANIMATION_SIZE        =    [20,20]
+BULLETS_ANIMATION_FPS                   =   3
 BULLETS_EXPLOSION_ANIMATION             =   engine.loadExplosionAnimation(ASSETS_PATH + "/explosion/animations/", BULLETS_EXPLOSION_ANIMATION_SIZE)
 EXIT                                    =   False
 
@@ -83,9 +76,6 @@ STEPS_SOUND.set_volume(0.3)
 pygame.mixer.music.set_volume(0.03)
 pygame.mixer.music.play(-1)
 pygame.mouse.set_visible(False)
-for key, value in PLAYER.weapon_list[PLAYER.current_weapon].animation_manager.animations.items():
-    print(f"{key:50} : {len(value)}")
-
 
 TILES               = {
     1 : engine.getImageReady(ASSETS_PATH + "/tiles/grass.png", TILE_SIZE, None, False),
@@ -97,8 +87,7 @@ while not EXIT:
     PIV_SURFACE.fill(BACKGROUND_COLOR)
 
     #   ````````        update
-    currentWeapon = PLAYER.weapon_list[PLAYER.current_weapon]
-    currentWeapon.updateShotsInfo(PLAYER, SCROLL, BULLETS_LIST, BULLET_SPRITE, BULLETS_SPEED, BULLETS_SIZE)
+    PLAYER.updateShotsInfo(SCROLL, BULLETS_LIST, BULLET_SPRITE, BULLETS_SPEED, BULLETS_SIZE)
     engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, BULLETS_EXPLOSIONS, SCROLL)
     engine.updateBulletExplosionAnimation(BULLETS_EXPLOSIONS, len(BULLETS_EXPLOSION_ANIMATION), BULLETS_ANIMATION_FPS)
     engine.updateWakes(WAKE_LIST, SCROLL)
@@ -106,7 +95,6 @@ while not EXIT:
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
 
     #   ````````        render
-    weapon = PLAYER.weapon_list[PLAYER.current_weapon]
     engine.renderBullets(BULLETS_LIST, PIV_SURFACE)
     engine.renderWakes(WAKE_LIST, PIV_SURFACE, SCROLL)
     engine.printMap(TILE_SIZE, CELL_LIST, TILES, PIV_SURFACE, GAME_MAP, SCROLL)
