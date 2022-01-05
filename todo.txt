@@ -11,9 +11,9 @@ ambiente:
     implementar objetos de ambiente
     implementar outlines
     Mejorar sprite de personaje y de balas
-    Documentar
     Arreglar imagen de las celdas (poner imagenes mas de tipo rambo)
     perfeccionar wakes al saltar
+    agregar nubes
 
 otros:
     Revisar otros proyectos y hacerlos portables a Windows (probar)
@@ -21,7 +21,5 @@ otros:
     Poner score
     Poner menu de configuracion
     Poner icono
-    Modificacion de mira en menu
-    Agregar rotacion de la cabeza del personaje, relativa a la posicion de la mira
 
 
