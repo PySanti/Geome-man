@@ -69,7 +69,7 @@ GRAVITY                                 =   1
 MAX_GRAVITY                             =   10
 
 
-TILE_SIZE                               =   [16, 16]
+TILE_SIZE                               =   [32, 32]
 
 JUMP_SOUND.set_volume(0.4)
 STEPS_SOUND.set_volume(0.3)
@@ -77,10 +77,13 @@ pygame.mixer.music.set_volume(0.03)
 pygame.mixer.music.play(-1)
 pygame.mouse.set_visible(False)
 
-TILES               = {
-    1 : engine.getImageReady(ASSETS_PATH + "/tiles/grass.png", TILE_SIZE, None, False),
-    2 : engine.getImageReady(ASSETS_PATH + "/tiles/dirt.png", TILE_SIZE, None, False),
-    3 : engine.getImageReady(ASSETS_PATH + "/tiles/plant.png", TILE_SIZE, (255,255,255), True),}
+TILES               = {}
+
+for i in range(1,10):
+    path_name = ASSETS_PATH + f"/tiles/tiles/{i}.png"
+    print(path_name)
+    TILES[i] = engine.getImageReady(path_name, TILE_SIZE, None, False)
+
 
 
 while not EXIT:
