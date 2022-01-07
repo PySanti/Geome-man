@@ -1,6 +1,7 @@
+from random import randint
 from ideas import AnimationController
 import pygame
-import os
+from pygame import color, init
 from pygame.locals import *
 from material import engine
 pygame.init()
@@ -34,7 +35,7 @@ JUMP_FORCE                              =   -8
 PIV_SURFACE_SIZE                        =   [800, 400]
 PLAYER_ANIMATIONS_FRAMES_PER_IMAGE      =   7
 PIV_SURFACE                             =   pygame.Surface(PIV_SURFACE_SIZE)
-PLAYER_SIZE                             =   [80,90]
+PLAYER_SIZE                             =   [80,70]
 PLAYER_ANIMATION_FPS                    =   4
 PLAYER                                  =   engine.Player( 
     steps_sound         = STEPS_SOUND, 
@@ -48,7 +49,7 @@ PLAYER                                  =   engine.Player(
     attack_sound_path   = "material/efects/shots/shot.wav")
 
 
-BACKGROUND_COLOR                        =   ( 0, 100, 150)
+BACKGROUND_COLOR                        =   ( 200, 200, 200)
 BACKGROUND_MUSIC                        =   pygame.mixer.music.load(SOUNDS_PATH + "background.wav")
 BULLETS_SIZE                            =   [20, 3]
 BULLET_SPRITE                           =   engine.getImageReady("material/armas/bullet.png", BULLETS_SIZE, None, True)
@@ -69,7 +70,7 @@ GRAVITY                                 =   1
 MAX_GRAVITY                             =   10
 
 
-TILE_SIZE                               =   [32, 32]
+TILE_SIZE                               =   [30, 20]
 
 JUMP_SOUND.set_volume(0.4)
 STEPS_SOUND.set_volume(0.3)
@@ -77,12 +78,44 @@ pygame.mixer.music.set_volume(0.03)
 pygame.mixer.music.play(-1)
 pygame.mouse.set_visible(False)
 
-TILES               = {}
+TILES               = engine.loadTiles(ASSETS_PATH + "/tiles/tiles", TILE_SIZE, None, True)
 
-for i in range(1,10):
-    path_name = ASSETS_PATH + f"/tiles/tiles/{i}.png"
-    print(path_name)
-    TILES[i] = engine.getImageReady(path_name, TILE_SIZE, None, False)
+
+
+
+#   recordar que la lista de rectangulos de fondo contiene "microlistas" de la forma
+#           proporcion de scroll, color, rect
+BACKGROUND_RECTS        =   []
+
+initial_x = 0
+initial_y = 200
+initial_position    = [initial_x,initial_y]
+rect_size       =   [100,150]
+space_diff      =   50
+
+for i in range(1, 6):
+    color           =   {
+        1 : 0,
+        2 : 100,
+        3 : 100
+    }
+    scroll_propor       = 0.1
+    for a in range(1, 6):
+        color[1]            += 30
+        initial_position[0] += space_diff 
+        scroll_propor       += 0.1
+        curr_rect           = pygame.Rect([initial_position[0],initial_position[1],rect_size[0], rect_size[1]])
+        print(color)
+        rect                = engine.BackgroundRect([value for key,value in color.items() ],curr_rect, scroll_propor)
+        BACKGROUND_RECTS.append(rect)
+
+
+
+
+
+
+
+
 
 
 
@@ -100,9 +133,12 @@ while not EXIT:
     #   ````````        render
     engine.renderBullets(BULLETS_LIST, PIV_SURFACE)
     engine.renderWakes(WAKE_LIST, PIV_SURFACE, SCROLL)
+    for rect in BACKGROUND_RECTS:
+        rect.render(PIV_SURFACE, SCROLL)
     engine.printMap(TILE_SIZE, CELL_LIST, TILES, PIV_SURFACE, GAME_MAP, SCROLL)
     PLAYER.render(PIV_SURFACE, SCROLL)
     engine.renderBulletExplosionAnimation(BULLETS_EXPLOSIONS, PIV_SURFACE, BULLETS_EXPLOSION_ANIMATION, SCROLL)
+
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
     #   ````````        event handling
     # recordar que tenemos que retornar tanto EXIT como LAST_MOUSE_POS por que al sustituir su valor, se crea una variable nueva, por lo tanto la referencia no es la misma

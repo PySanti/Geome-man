@@ -65,7 +65,7 @@ class Player:
     def __init__(self, steps_sound, player_speed, jump_sound, animation_manager, size, cadencia_de_arma, no_amoo_sound_path, alcance, attack_sound_path):
         self.width                  =   size[0]
         self.height                 =   size[1]
-        self.rect                   =   pygame.Rect([200,-100, self.width, self.height])
+        self.rect                   =   pygame.Rect([500,-100, self.width, self.height])
         self.y_momentum             =   0
         self.moving_right           =   False
         self.moving_left            =   False
@@ -318,9 +318,36 @@ class Bullet:
             Renderiza la imagen de la bala en "surface"
         """
         surface.blit(self.sprite, self.position)
+class BackgroundTree:
+    pass
+
+class Grass:
+    pass
 
 
+class BackgroundRect:
+    """
+        Clase creada para la administracion de rectangulos de fondo
+    """
+    def __init__(self, color, rect, scroll_proportion) -> None:
+        self.color = color
+        self.rect = rect
+        self.scroll_proportion = scroll_proportion
+    
+    def render(self, surface, scroll):
+        rect_pos = [self.rect.x - (scroll[0] * self.scroll_proportion), self.rect.y - (scroll[1] * self.scroll_proportion)]
+        pygame.draw.rect(surface, self.color, [rect_pos[0], rect_pos[1], self.rect.width, self.rect.height])
 
+def loadTiles(tilesFolder, tiles_size, tiles_colorkey, has_alpha_pixels):
+    """
+        Carga el diccionario de celas y lo retorna
+    """
+    tiles_dict = {}
+    for tile in os.listdir(tilesFolder):
+        path_name = tilesFolder + f"/{tile}"
+        tile_name = tile.split(".")[0]
+        tiles_dict[tile_name] = getImageReady(path_name, tiles_size, tiles_colorkey, has_alpha_pixels)
+    return tiles_dict
 def updateBullets(bullets_list, cell_list, surface_size, bullets_explosion_list, scroll):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
@@ -458,7 +485,7 @@ def loadMap(path) -> list:
             current_line = []
             for char in line:
                 if char != "\n":
-                    current_line.append(int(char))
+                    current_line.append(char)
             map_.append(current_line)
     return map_
 def printMap(tile_size, cells, tiles, surface, map_, scroll):
@@ -470,7 +497,8 @@ def printMap(tile_size, cells, tiles, surface, map_, scroll):
     no_cells_loaded = len(cells) == 0
     for line in map_:
         for char in line:
-            if char >= 1:
+            if char != "0":
+                #pygame.draw.rect(surface, (100,100,100), [curr_x - scroll[0], curr_y - scroll[1], tile_size[0], tile_size[1]])
                 surface.blit(tiles[char], [curr_x - scroll[0], curr_y - scroll[1]])
                 if no_cells_loaded:
                     if char != 3:

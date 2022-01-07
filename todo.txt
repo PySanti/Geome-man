@@ -21,6 +21,7 @@ otros:
     Poner score
     Poner menu de configuracion
     Poner icono
+    agregar sprites para colisiones reales
 
 
 
