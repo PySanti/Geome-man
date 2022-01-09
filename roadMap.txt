@@ -1,5 +1,3 @@
-- Creacion de Sprites
-- Implementacion de sistema de armas y nuevos sprites
-- Creacion de spriteTester
-- Revision de codigo (fugas de memoria, y documentaciones)
-- Commit
+- gran refactor y commit
+- perfeccionar bandana de personaje al disparar parado
+- erradicar chispas al disparar en la animacion

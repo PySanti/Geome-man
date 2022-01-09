@@ -4,68 +4,15 @@ from pygame.locals import *
 import os
 from random import randint
 
-class BulletExplosionAnimation:
-    """
-        Clase creada para el mantenimiento de las explosiones de las balas al colisionar. 
-        Este tipo de objeto se almacena en una lista declarada en el archivo "main" llamada "BULLETS_EXPLOSIONS" cuando las balas colisionan. 
-        Esto se detecta al actualizar la posicion de las balas en el metodo "update" de la clase "Bullet".
-        "WAKE_LIST" permite que a traves de la funcion "updateBulletExplosionAnimation" se actualizen los efectos por cada iteracion
-    """
-    def __init__(self, position):
-        self.position = position
-        self.current_frame = 0
-        self.current_animation = 0
-    def update(self, frames_per_img):
-        """
-            Actualiza los valores de las animaciones del efecto
-        """
-        if self.current_frame == frames_per_img:
-            self.current_frame = 0
-            self.current_animation += 1
 
-        else:
-            self.current_frame += 1
-    def render(self, surface, animation_list,scroll):
-        """
-            Renderiza la imagen actual de la animacion en "surface"
-        """
-        surface.blit(animation_list[self.current_animation], [self.position[0], self.position[1]])
-class Wake:
-    """
-        Clase creada para el mantenimiento de las estelas provocadas por el personaje al saltar. 
-        Este tipo de objeto se crea cuando el usuario salta con un "player.jump_count == 0" y "player.in_floor == True" en la funcion "eventHandling"
-        Y se almacena en una lista declarada en el archivo "main", llamada "WAKE_LIST", para que de este modo, a traves de la funcion "updateWakes", las estelas 
-        concurrentes se actualizen.
-
-    """
-    def __init__(self, max_frames, position, animations):
-        self.animations = animations
-        self.position = position
-        self.max_frames =  max_frames
-        self.current_frame = 0
-        self.current_sprite = 0
-    def update(self):
-        """
-            Actualiza la informacion relacionada con la animacion de la estela
-        """
-        if self.current_frame  == self.max_frames:
-            self.current_frame = 0
-            self.current_sprite += 1
-        else:
-            self.current_frame += 1
-    def render(self, surface, scroll):
-        """
-            Renderiza la imagen actual de la animacion en "surface"
-        """
-        surface.blit(self.animations[self.current_sprite], [self.position[0] - scroll[0], self.position[1] - scroll[1]])
 class Player:
     """
         Clase creada para la administracion del personaje y datos del arma
     """
-    def __init__(self, steps_sound, player_speed, jump_sound, animation_manager, size, cadencia_de_arma, no_amoo_sound_path, alcance, attack_sound_path):
+    def __init__(self, steps_sound, player_speed, jump_sound, animation_manager, size, cadencia_de_arma, attack_sound_path):
         self.width                  =   size[0]
         self.height                 =   size[1]
-        self.rect                   =   pygame.Rect([500,-100, self.width, self.height])
+        self.rect                   =   pygame.Rect([1000,350, self.width, self.height])
         self.y_momentum             =   0
         self.moving_right           =   False
         self.moving_left            =   False
@@ -80,8 +27,6 @@ class Player:
         self.animation_manager      =   animation_manager
         self.amoo                   =   1000
         self.cadencia               =   cadencia_de_arma
-        self.no_amoo_sound          =   pygame.mixer.Sound(no_amoo_sound_path)
-        self.alcance                =   alcance
         self.attack_sound           =   pygame.mixer.Sound(attack_sound_path)
         self.look_back_couter       =   0
         self.look_back_max_counter  =   None
@@ -122,34 +67,48 @@ class Player:
             if colisions["top"]:
                 self.y_momentum = max_gravity//10
             self.in_floor = False
-
-
-
-
         # actualizacion de sonidos y animaciones
         self.animationCheck()
         self.animation_manager.updateAnimation()
         self.updateSounds()
         self.updateLastDirection()
-    def attack(self, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+    def attack(self, scroll, bullets_list, bullets_speed, bullets_size, particles, particles_per_shot):
         if self.amoo > 0:
             if (self.attacking["right"]):
                 bulletInitialPos    = getScrolledPosition(scroll, [self.rect.right + 10, self.rect.bottom - self.height//2])
-                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [bullets_speed, 0], bullets_size, self.alcance)
+                new_bullet          = Bullet(bulletInitialPos,  [bullets_speed, 0], bullets_size)
                 bullets_list.append(new_bullet)
 
             elif (self.attacking["left"]):
                 bulletInitialPos    = getScrolledPosition(scroll, [self.rect.left - 10, self.rect.bottom - self.height//2])
-                bullet_sprite       = pygame.transform.flip(bullet_sprite, True, False)
-                new_bullet          = Bullet(bulletInitialPos, bullet_sprite, [-bullets_speed, 0], bullets_size, self.alcance)
+                new_bullet          = Bullet(bulletInitialPos, [-bullets_speed, 0], bullets_size)
                 bullets_list.append(new_bullet)
             self.amoo -= 1
-            self.attack_sound.set_volume(0.5)
+            self.attack_sound.set_volume(0.1)
             self.attack_sound.play().fadeout(500)
 
-        else:
-            self.no_amoo_sound.set_volume(0.5)
-            self.no_amoo_sound.play().fadeout(500)
+            particles_color         =  [100,100,100 ]
+            particles_move          =  [randint(-1,1),-1] 
+            particles_move_change   =   [0, 0.1] 
+            particles_color_change =  [0,0,0]
+            particles_size_change  =  0.05
+            particles_size          =   3
+            move_range              =  10
+
+            for i in range(1, particles_per_shot+1):
+                particle_pos = [self.rect.x + self.width,self.rect.y + (self.height//2) ] if self.attacking["right"] else [self.rect.x ,self.rect.y + (self.height//2) ] 
+                particle_pos[0] += randint(-move_range,move_range)
+                particle_pos[1] += randint(-move_range,move_range)
+                new_particle     = Particle(
+                    particle_pos.copy(), 
+                    particles_size,
+                    particles_color.copy(), 
+                    particles_move.copy(), 
+                    particles_size_change, 
+                    particles_move_change, 
+                    particles_color_change,
+                    False  )
+                particles.append(new_particle)
     def moving(self):
         """
             Retorna True en caso de que el personaje se este moviendo
@@ -218,12 +177,12 @@ class Player:
             else:
                 if (self.attacking["right"] or self.attacking["left"])  and (animation_manager.current_animation_name != "attacking_jumping"):
                     animation_manager.changeAnimation("attacking_jumping")
-    def updateShotsInfo(self, scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size):
+    def updateShotsInfo(self, scroll, bullets_list, bullets_speed, bullets_size, particles_list, particles_per_shot):
         """
             Actualiza los datos para disparar, y dispara en caso de que las condiciones esten dadas
         """
         if (self.attacking["right"] or self.attacking["left"]) and (self.current_shot_iter == self.cadencia):
-            self.attack(scroll, bullets_list, bullet_sprite, bullets_speed, bullets_size)
+            self.attack(scroll, bullets_list, bullets_speed, bullets_size, particles_list, particles_per_shot)
             self.current_shot_iter = 0
 
         elif not (self.attacking["right"] or self.attacking["left"]):
@@ -283,7 +242,6 @@ class Player:
         """
         current_index  =   self.animation_manager.current_animation_index
         current_sprite = self.animation_manager.current_animation_list[current_index]
-        print(f"{self.animation_manager.current_animation_name:20} -> {current_index}/{len(self.animation_manager.current_animation_list)-1}")
         if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
         surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1], self.rect.width, self.rect.height])
@@ -299,32 +257,65 @@ class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
     """
-    def __init__(self, initial_pos, sprite, move, size, alcance):
+    def __init__(self, initial_pos,  move, size):
         self.position   = initial_pos
         self.move       = move
-        self.sprite     = sprite
         self.size       = size
-        self.alcance    = alcance
-        self.distanciaRecorrida = 0
     def updatePosition(self):
         """
         Actualiza la posicion de la bala self usando el atributo move, ademas actualiza la distancia recorrida por la bala
         """
         self.position[0] += self.move[0]
         self.position[1] += self.move[1]
-        self.distanciaRecorrida += abs(self.move[0])
     def render(self, surface):
         """
             Renderiza la imagen de la bala en "surface"
         """
-        surface.blit(self.sprite, self.position)
-class BackgroundTree:
-    pass
+        pygame.draw.rect(surface,  (100,100,100), [self.position[0], self.position[1], self.size[0], self.size[1]])
+class Particle:
+    def __init__(self, position, size, color, move, size_change, move_change, color_change, is_colider) -> None:
+        self.size = size
+        self.color = color
+        self.move_count = move
+        self.size_change = size_change
+        self.move_change = move_change
+        self.color_change = color_change
+        self.rect = pygame.Rect([position[0], position[1], size, size])
+        self.is_colider =   is_colider
+    def update(self, cell_list):
+        self.move(cell_list)
+        self.size -= self.size_change
+        self.move_count[0] += self.move_change[0]
+        self.move_count[1] += self.move_change[1]
+        self.updateColor()
+    def updateColor(self):
+        self.color[0] += self.color_change[0]
+        self.color[1] += self.color_change[1]
+        self.color[2] += self.color_change[2]
+        if len([i for i in self.color if (i < 0 or i > 255)]) > 0:
+            for color in self.color:
+                if (color < 0) :
+                    self.color[self.color.index(color)] = 0
+                elif (color > 255):
+                    self.color[self.color.index(color)] = 255
+    def move(self, cell_list):
+        self.rect.x += self.move_count[0]
+        if self.is_colider:
+            for cell in colisionTest(self.rect, cell_list):
+                if self.move_count[0] > 0:
+                    self.rect.right = cell.left
+                else:
+                    self.rect.left = cell.right
 
-class Grass:
-    pass
-
-
+        self.rect.y += self.move_count[1]
+        if self.is_colider:
+            for cell in colisionTest(self.rect, cell_list):
+                if self.move_count[1] > 0:
+                    self.rect.bottom = cell.top
+                else:
+                    self.rect.top = cell.bottom
+    def render(self, surface, scroll):
+        pygame.draw.circle(surface, self.color, [self.rect.x - scroll[0], self.rect.y  - scroll[1]], self.size)
 class BackgroundRect:
     """
         Clase creada para la administracion de rectangulos de fondo
@@ -333,22 +324,34 @@ class BackgroundRect:
         self.color = color
         self.rect = rect
         self.scroll_proportion = scroll_proportion
-    
     def render(self, surface, scroll):
         rect_pos = [self.rect.x - (scroll[0] * self.scroll_proportion), self.rect.y - (scroll[1] * self.scroll_proportion)]
         pygame.draw.rect(surface, self.color, [rect_pos[0], rect_pos[1], self.rect.width, self.rect.height])
 
-def loadTiles(tilesFolder, tiles_size, tiles_colorkey, has_alpha_pixels):
+
+
+def generateBackgroundRects(levels, columnas, capas, initial_pos, space_diff, rect_size, rect_color):
     """
-        Carga el diccionario de celas y lo retorna
+        Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
     """
-    tiles_dict = {}
-    for tile in os.listdir(tilesFolder):
-        path_name = tilesFolder + f"/{tile}"
-        tile_name = tile.split(".")[0]
-        tiles_dict[tile_name] = getImageReady(path_name, tiles_size, tiles_colorkey, has_alpha_pixels)
-    return tiles_dict
-def updateBullets(bullets_list, cell_list, surface_size, bullets_explosion_list, scroll):
+    initial_x, initial_y = initial_pos
+    rects = [[] for i in range(columnas+1)]
+    for a in range(1,levels+1):
+        for i in range(0, columnas):
+            color           =   rect_color.copy()
+            scroll_propor       = 0.1
+            for a in range(1, capas+1):
+                color[1]            += ((155)//capas)
+                initial_pos[0] += space_diff 
+                scroll_propor       +=  0.1
+                curr_rect           = pygame.Rect([initial_pos[0],initial_pos[1],rect_size[0], rect_size[1]])
+                rect                = BackgroundRect([value for key,value in color.items() ],curr_rect, scroll_propor)
+                rects[i].append(rect)
+        initial_pos[0] = initial_x 
+        initial_pos[1] += 200
+    middle =initial_pos[0]  + 600
+    return rects, middle
+def updateBullets(bullets_list, cell_list, surface_size, scroll, particles):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
         cuyo alcance haya terminado
@@ -358,55 +361,53 @@ def updateBullets(bullets_list, cell_list, surface_size, bullets_explosion_list,
         if  (surface_size[0] < bullet.position[0]) or (bullet.position[0] < 0):
             bullets_list.remove(bullet)
         else:
+            last_bullet_pos = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]]
             bullet.updatePosition()
             colisions = colisionTest(pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]]), cell_list)
             if len(colisions) > 0:
                 bullets_list.remove(bullet)
                 colied_tile = colisions[0]
-                colision_position = [colied_tile.x + colied_tile.width//2, colied_tile.y + colied_tile.height//2]
-                bullets_explosion_list.append(BulletExplosionAnimation(colision_position))
-
-            elif bullet.distanciaRecorrida > bullet.alcance:
-                bullets_list.remove(bullet)
-                bullets_explosion_list.append(BulletExplosionAnimation(bullet.position))
+                for i in range(1,10):
+                    particle_initial_pos    =  [colied_tile.right if last_bullet_pos[0] > colied_tile.right else colied_tile.left, last_bullet_pos[1]]
+                    particle_size           = 3
+                    particle_color          = [100,100,100].copy()
+                    particle_move           =   [randint(-2,2),randint(-1,1)].copy() 
+                    particle_size_change    =   0.1
+                    particle_move_change    = [0,0.1]
+                    particle_color_change   = [0,0,0]
+                    new_particle            = Particle(
+                        particle_initial_pos,
+                        particle_size, 
+                        particle_color, 
+                        particle_move, 
+                        particle_size_change, 
+                        particle_move_change, 
+                        particle_color_change, 
+                        False)
+                    particles.append(new_particle)
+            else:
+                for i in range(1,3):
+                    particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
+                    particle_size           = 3
+                    particle_color          = [100,100,100].copy()
+                    particle_move           =   [0,1].copy() if i == 1 else [0,-1]
+                    particle_size_change    =   0.1
+                    particle_move_change    = [0,0]
+                    particle_color_change   = [0,0,0]
+                    new_particle            = Particle(
+                        particle_initial_pos,
+                        particle_size, 
+                        particle_color, 
+                        particle_move, 
+                        particle_size_change, 
+                        particle_move_change, 
+                        particle_color_change, 
+                        False)
+                    particles.append(new_particle)
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
-def updateBulletExplosionAnimation(BulletExplosionList, animationListLen, frames_per_img):
-    """
-        Actualiza la informacion de las animaciones de las explosiones de las balas de la lista "BulletExplosionList"
-        ademas elimina aquellas animaciones que se hayan terminado
-    """
-    BulletExplosionList2 = BulletExplosionList
-    for explosion in BulletExplosionList2:
-        explosion.update(frames_per_img)
-        if explosion.current_animation > animationListLen-1:
-            BulletExplosionList.remove(explosion)
-def renderBulletExplosionAnimation(BulletExplosionAnimationList, surface, animation_list, scroll):
-    """
-        Recorre la lista de los objetos BulletExplosionAnimation, y renderiza la imagen correspondiente
-    """
-    for explosion in BulletExplosionAnimationList:
-        explosion.render(surface, animation_list, scroll)
-def loadExplosionAnimation(path, animation_size):
-    """
-        Carga la lista de imagenes necesarias para la animacion de las explosiones de las balas y la retorna
-    """
-    animation_list = []
-    current_img = 0
-    current_target = 1
-    folder = os.listdir(path)
-    while current_target != len(folder):
-        if str(current_target) in folder[current_img]:
-            ready_img = getImageReady(path + folder[current_img], animation_size, None, True)
-            animation_list.append(ready_img)
-            current_target += 1
-            current_img = 0 
-        else:
-            current_img += 1
-    
-    return animation_list
-def eventHandling(eventList, player,EXIT, jump_force, wake_list, wake_animations, wake_size):
+def eventHandling(eventList, player,EXIT, jump_force, particles):
     """
         Funcion creada para la recepcion de todos los eventos en el programa, encargada de llamar a las funciones necesarias relativas al evento en particular
 
@@ -429,9 +430,22 @@ def eventHandling(eventList, player,EXIT, jump_force, wake_list, wake_animations
             if event.key == K_k:
                 player.attacking["left"] = (event.type == KEYDOWN)
             if event.key == K_w and event.type == KEYDOWN:
-                if player.jump_count == 0 and player.in_floor:
-                    animation_direction = "right" if player.moving_right else "left"
-                    wake_list.append(Wake(3, [player.rect.x, player.rect.y + player.height - wake_size[1]], wake_animations["right" if animation_direction == "left" else "left"]))
+                if (player.jump_count == 0) and (player.in_floor):
+                    for i in range(1,randint(3,8)):
+                        particle_pos            = [player.rect.x + (player.width//2), player.rect.bottom-5].copy()
+                        particle_size           = 5
+                        particle_color          = [100,100,100].copy()
+                        particle_move           = [randint(-5,5), -3].copy()
+                        particle_size_change    = 0.1
+                        if particle_move[0] < 0:
+                            particle_move_change = [0.1, 0.3]
+                        elif particle_move[0] == 0:
+                            particle_move_change = [0, 0.3]
+                        else:
+                            particle_move_change = [-0.1, 0.3]
+                        particle_color_change = [0,0,0]
+                        new_particle = Particle(particle_pos, particle_size, particle_color, particle_move, particle_size_change, particle_move_change, particle_color_change,True)
+                        particles.append(new_particle)
                 player.jump(jump_force)
     return EXIT
 def animationDict(size, colorkey, animationSetPath, has_alpha):
@@ -488,21 +502,23 @@ def loadMap(path) -> list:
                     current_line.append(char)
             map_.append(current_line)
     return map_
-def printMap(tile_size, cells, tiles, surface, map_, scroll):
+def printMap(tile_size, cells, color_change, surface, map_, scroll, space_char, player_pos):
     """
         Imprime el mapa, correspondiente a map_, ademas agrega las celdas a la lista "cells" en caso de que no esten ya ahi.
     """
     curr_x = 0
     curr_y = 0
     no_cells_loaded = len(cells) == 0
+    player_pos = getScrolledPosition(scroll, player_pos)
     for line in map_:
         for char in line:
-            if char != "0":
-                #pygame.draw.rect(surface, (100,100,100), [curr_x - scroll[0], curr_y - scroll[1], tile_size[0], tile_size[1]])
-                surface.blit(tiles[char], [curr_x - scroll[0], curr_y - scroll[1]])
+            if char != space_char:
+                char        = int(char)
+                tile        = pygame.Rect([curr_x - scroll[0], curr_y - scroll[1], tile_size[0], tile_size[1]]) 
+                if watchable(tile, surface, player_pos, 1):
+                    pygame.draw.rect(surface, (char * color_change,50,50), tile)
                 if no_cells_loaded:
-                    if char != 3:
-                        cells.append(pygame.Rect([curr_x, curr_y, tile_size[0], tile_size[1]]))
+                    cells.append(pygame.Rect([curr_x, curr_y, tile_size[0], tile_size[1]]))
             curr_x += tile_size[0]
         curr_y += tile_size[1]
         curr_x = 0
@@ -522,37 +538,30 @@ def updateScroll(scroll, player, surface_size, scroll_smooth):
     """
     scroll[0] += (player.rect.x - scroll[0] - surface_size[0]//2)//scroll_smooth
     scroll[1] += (player.rect.y - scroll[1] - surface_size[1]//2)//scroll_smooth
-def loadWakeAnimations(path, size ):
+def renderBackgroundRects(player_rect, middle_decoration, background_rects, surface, scroll):
+    if (player_rect.x) >= middle_decoration:
+        for columna in background_rects:
+            for capa in columna:
+                capa.render(surface, scroll)
+    else:
+        len_ = len(background_rects)
+        for i in range(0,len_):
+            for  capa in background_rects[len_ - i -1 ]:
+                capa.render(surface, scroll)
+def renderParticles(particle_list, surface, scroll):
     """
-        Funcion creada para cargar las imagenes necesarias para la animacion de la estela al saltar
+        Imprime los arboles y sus particulas
     """
-    animations = {}
-    for direction in os.listdir(path):
-        animations[direction] = []
-        current_target = 1
-        currIndex = 0
-        animationList = os.listdir(f"{path}/{direction}")
-        while current_target != len(animationList):
-            if str(current_target) in animationList[currIndex]:
-                animations[direction].append(getImageReady(f"{path}/{direction}/{animationList[currIndex]}", size, None, True))
-                current_target += 1
-                currIndex = 0
-            else:
-                currIndex += 1
-    
-    return animations
-def renderWakes(wake_list, surface, scroll):
+    for particle in particle_list:
+        particle.render(surface, scroll)
+def updateParticles(particle_list, cell_list):
+    for particle in particle_list.copy():
+        particle.update(cell_list)
+        if particle.size < 1:
+            particle_list.remove(particle)
+def watchable(rect, surface, player_pos, surface_peace):
     """
-        Funcion creada para renderizar las imagenes de los objetos "Wake"
+        Funcion creada para determinar si algun rectangulo es visible por el personaje
     """
-    for wake in wake_list:
-        wake.render(surface, scroll)
-def updateWakes(wake_list, scroll):
-    """
-        Funcion creada para actualizar la informacion de la animacion de los objetos wakes
-    """
-    wakeList2 = wake_list.copy()
-    for wake in wakeList2:
-        wake.update()
-        if wake.current_sprite == len(wake.animations):
-            wake_list.remove(wake)
+    surface_size = [surface.get_width(), surface.get_height()]
+    return ((rect.right > (player_pos[0] - (surface_size[0]//surface_peace))) and (rect.left < (player_pos[0] + (surface_size[0]//surface_peace))) and (rect.top < (player_pos[1] + (surface_size[1]//surface_peace))) and (rect.bottom > (player_pos[1] - (surface_size[1]//surface_peace))))
