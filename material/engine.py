@@ -1,5 +1,4 @@
 import pygame
-from pygame import color
 from pygame.locals import *
 import os
 from random import randint
@@ -52,6 +51,7 @@ class Player:
             player_movement[0] += self.speed
         elif self.moving_left:
             player_movement[0] -= self.speed
+
         self.y_momentum += gravity
         if self.y_momentum > max_gravity:
             self.y_momentum = max_gravity
@@ -72,20 +72,23 @@ class Player:
         self.animation_manager.updateAnimation()
         self.updateSounds()
         self.updateLastDirection()
+    def generateAttackSound(self, volume, fadeout):
+        """
+            Reproduce el sonido de ataque
+        """
+        self.attack_sound.set_volume(volume)
+        self.attack_sound.play().fadeout(fadeout)
     def attack(self, scroll, bullets_list, bullets_speed, bullets_size, particles, particles_per_shot):
+        """
+            Administra las acciones necesarias al disparar
+        """
         if self.amoo > 0:
-            if (self.attacking["right"]):
-                bulletInitialPos    = getScrolledPosition(scroll, [self.rect.right + 10, self.rect.bottom - self.height//2])
-                new_bullet          = Bullet(bulletInitialPos,  [bullets_speed, 0], bullets_size)
-                bullets_list.append(new_bullet)
-
-            elif (self.attacking["left"]):
-                bulletInitialPos    = getScrolledPosition(scroll, [self.rect.left - 10, self.rect.bottom - self.height//2])
-                new_bullet          = Bullet(bulletInitialPos, [-bullets_speed, 0], bullets_size)
-                bullets_list.append(new_bullet)
+            bulletInitialPos    = getScrolledPosition(scroll, [self.rect.right + 10 if self.attacking["right"] else self.rect.left - 10, self.rect.bottom - self.height//2])
+            new_bullet          = Bullet(bulletInitialPos,  [bullets_speed if self.attacking["right"] else -bullets_speed, 0], bullets_size)
+            bullets_list.append(new_bullet)
             self.amoo -= 1
-            self.attack_sound.set_volume(0.1)
-            self.attack_sound.play().fadeout(500)
+            self.generateAttackSound(volume=0.1, fadeout=700)
+
 
             particles_color         =  [100,100,100 ]
             particles_move          =  [randint(-1,1),-1] 
@@ -223,6 +226,11 @@ class Player:
                 colisions["top"] = True
 
         return colisions
+    def generateJumpSound(self, fadeout):
+        """
+            Reproduce el efecto de salto
+        """
+        self.jump_sound.play().fadeout(fadeout)
     def jump(self, jump_force):
         """
             Actualiza el momentum del personaje para que "salte" siempre y cuando las condiciones de salto esten dadas
@@ -232,7 +240,8 @@ class Player:
                 self.y_momentum = jump_force
                 self.jump_count += 1
                 self.in_floor = False
-                self.jump_sound.play().fadeout(500)
+                self.generateJumpSound(500)
+
             elif self.jump_count == 1:
                 self.y_momentum = jump_force*2
                 self.jump_count += 1
@@ -244,7 +253,7 @@ class Player:
         current_sprite = self.animation_manager.current_animation_list[current_index]
         if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
-        surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1], self.rect.width, self.rect.height])
+        surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1]])
     def updateLastDirection(self):
         """
             Actualiza el atributo "last_direction" dependiendo de las condiciones
@@ -263,7 +272,7 @@ class Bullet:
         self.size       = size
     def updatePosition(self):
         """
-        Actualiza la posicion de la bala self usando el atributo move, ademas actualiza la distancia recorrida por la bala
+        Actualiza la posicion de la bala self usando el atributo move
         """
         self.position[0] += self.move[0]
         self.position[1] += self.move[1]
@@ -273,22 +282,42 @@ class Bullet:
         """
         pygame.draw.rect(surface,  (100,100,100), [self.position[0], self.position[1], self.size[0], self.size[1]])
 class Particle:
+    """
+        Clase creada para el mantenimiento de las particulas
+    """
     def __init__(self, position, size, color, move, size_change, move_change, color_change, is_colider) -> None:
-        self.size = size
-        self.color = color
-        self.move_count = move
-        self.size_change = size_change
-        self.move_change = move_change
-        self.color_change = color_change
-        self.rect = pygame.Rect([position[0], position[1], size, size])
-        self.is_colider =   is_colider
+        self.size           = size
+        self.color          = color
+        self.move_count     = move
+        self.size_change    = size_change
+        self.move_change    = move_change
+        self.color_change   = color_change
+        self.rect           = pygame.Rect([position[0], position[1], size, size])
+        self.is_colider     = is_colider
     def update(self, cell_list):
+        """
+            Mueve la bala y corrige colisiones en caso de haberlas, actualiza el tamanyo de la particula, actualiza el atributo move_count 
+            el cual define la cantidad de pixeles que la particula se mueve por iteracion. Ademas, actualiza el color 
+        """
         self.move(cell_list)
-        self.size -= self.size_change
+        self.updateSize()
+        self.updateMoveCount()
+        self.updateColor()
+    def updateMoveCount(self):
+        """
+            Actualiza la cantidad de movimiento que se le aplica a la particula por iteracion
+        """
         self.move_count[0] += self.move_change[0]
         self.move_count[1] += self.move_change[1]
-        self.updateColor()
+    def updateSize(self):
+        """
+            Actualiza el tamanyo de la particula
+        """
+        self.size -= self.size_change
     def updateColor(self):
+        """
+            Actualiza el color de la particula
+        """
         self.color[0] += self.color_change[0]
         self.color[1] += self.color_change[1]
         self.color[2] += self.color_change[2]
@@ -299,6 +328,9 @@ class Particle:
                 elif (color > 255):
                     self.color[self.color.index(color)] = 255
     def move(self, cell_list):
+        """
+            Aplica movimiento sobre la particula y corrige las potenciales colisiones en caso de que la particula lo amerite
+        """
         self.rect.x += self.move_count[0]
         if self.is_colider:
             for cell in colisionTest(self.rect, cell_list):
@@ -315,6 +347,9 @@ class Particle:
                 else:
                     self.rect.top = cell.bottom
     def render(self, surface, scroll):
+        """
+            Renderiza la particula
+        """
         pygame.draw.circle(surface, self.color, [self.rect.x - scroll[0], self.rect.y  - scroll[1]], self.size)
 class BackgroundRect:
     """
@@ -354,7 +389,7 @@ def generateBackgroundRects(levels, columnas, capas, initial_pos, space_diff, re
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
-        cuyo alcance haya terminado
+        cuyo alcance haya terminado. Ademas genera las particulas pertinentes en caso de que la bala colisione y siga siendo visible
     """
     copy_list = bullets_list.copy()
     for bullet in copy_list:
@@ -539,6 +574,14 @@ def updateScroll(scroll, player, surface_size, scroll_smooth):
     scroll[0] += (player.rect.x - scroll[0] - surface_size[0]//2)//scroll_smooth
     scroll[1] += (player.rect.y - scroll[1] - surface_size[1]//2)//scroll_smooth
 def renderBackgroundRects(player_rect, middle_decoration, background_rects, surface, scroll):
+    """
+        Renderiza los rectangulos de fondo. Recordar que los rectangulos estan almacenados en una lista, 
+        y organizados en listas (dentro de la primera lista) que representan las 
+        columnas de arriba a abajo. Esto es necesario para casos en los que 
+        el personaje este por detras de cierto punto en donde las capas empiezan a 
+        solaparse por el orden de renderizado. Si se almacenan en columas, 
+        unicamente basta con saber cuando el personaje se encuentre en aquel punto y renderizar las columnas en sentido contrario
+    """
     if (player_rect.x) >= middle_decoration:
         for columna in background_rects:
             for capa in columna:
@@ -550,11 +593,14 @@ def renderBackgroundRects(player_rect, middle_decoration, background_rects, surf
                 capa.render(surface, scroll)
 def renderParticles(particle_list, surface, scroll):
     """
-        Imprime los arboles y sus particulas
+        Renderiza las particulas vigentes
     """
     for particle in particle_list:
         particle.render(surface, scroll)
 def updateParticles(particle_list, cell_list):
+    """
+        Actualiza el estado de todas las particulas vigentes
+    """
     for particle in particle_list.copy():
         particle.update(cell_list)
         if particle.size < 1:
