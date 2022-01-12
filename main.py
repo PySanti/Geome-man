@@ -1,3 +1,4 @@
+from random import randint
 from ideas import AnimationController
 import pygame
 from pygame.locals import *
@@ -41,7 +42,7 @@ PLAYER                                  =   engine.Player(
 PARTICLES_PER_SHOT                      =   3
 
 BACKGROUND_COLOR                        =   ( 100, 100, 100)
-BACKGROUND_MUSIC                        =   pygame.mixer.music.load(ASSETS_PATH + "/efects/background/background.wav")
+BACKGROUND_MUSIC                        =   pygame.mixer.music.load(ASSETS_PATH + "/efects/background/theme.wav")
 BULLETS_SIZE                            =   [20, 3]
 BULLETS_LIST                            =   []
 BULLETS_SPEED                           =  30
@@ -61,7 +62,7 @@ TILE_SIZE                               =   [30, 20]
 
 JUMP_SOUND.set_volume(0.1)
 STEPS_SOUND.set_volume(0.1)
-pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(-1)
 pygame.mouse.set_visible(False)
 
@@ -80,6 +81,9 @@ BACKGROUND_RECTS, MIDDLE_RECT_DECORATION        =   engine.generateBackgroundRec
     rect_size=[100,150], 
     rect_color={1: 100, 2:100,3:100})
 PARTICLES                                       =   []
+ENEMY_LIST                                      =   []
+ENEMY_LIST_GENERATION_TIMING                    =   1000
+BULLET_FORCE                                    =   3
 
 
 
@@ -91,9 +95,11 @@ while not EXIT:
     #   ````````        update
     PLAYER.updateShotsInfo(SCROLL, BULLETS_LIST, BULLETS_SPEED, BULLETS_SIZE, PARTICLES, PARTICLES_PER_SHOT)
     PLAYER.updateState(GRAVITY, MAX_GRAVITY, CELL_LIST)
-    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES)
+    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES, ENEMY_LIST, BULLET_FORCE)
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
     engine.updateParticles(PARTICLES, CELL_LIST)
+    engine.updateEnemys(ENEMY_LIST, GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER, BULLETS_LIST, ENEMY_LIST_GENERATION_TIMING, BULLETS_SIZE, SCROLL, BULLETS_SPEED)
+
 
     #   ````````        render
     engine.renderBackgroundRects(PLAYER.rect, MIDDLE_RECT_DECORATION, BACKGROUND_RECTS, PIV_SURFACE, SCROLL)
@@ -101,6 +107,8 @@ while not EXIT:
     engine.printMap(TILE_SIZE, CELL_LIST, CELL_COLOR_CHANGE, PIV_SURFACE, GAME_MAP, SCROLL, SPACE_CHAR, [PLAYER.rect.x, PLAYER.rect.y])
     engine.renderParticles(PARTICLES, PIV_SURFACE, SCROLL)
     engine.renderBullets(BULLETS_LIST, PIV_SURFACE)
+    PLAYER.renderLiveBar(PIV_SURFACE, SCROLL)
+    engine.renderEnemys(ENEMY_LIST, SCROLL, PIV_SURFACE)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
 

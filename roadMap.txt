@@ -1,1 +1,5 @@
-- gran refactor y commit
+- arreglar problemas de sincrionizacion en la animacion
+- implemenentar enemigos
+- agregar efectos de sonido de colision con elementos del ambiente y con enemigos
+- arreglar instancias de particulas para que no ocupen tanto espacio
+- refactorizar la funcion "updateBullets"

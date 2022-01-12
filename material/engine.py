@@ -1,7 +1,8 @@
 import pygame
+from pygame import color
 from pygame.locals import *
 import os
-from random import randint
+from random import choice, randint
 
 
 class Player:
@@ -30,6 +31,7 @@ class Player:
         self.look_back_couter       =   0
         self.look_back_max_counter  =   None
         self.last_direction         =   None
+        self.live                   =   100
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -87,7 +89,7 @@ class Player:
             new_bullet          = Bullet(bulletInitialPos,  [bullets_speed if self.attacking["right"] else -bullets_speed, 0], bullets_size)
             bullets_list.append(new_bullet)
             self.amoo -= 1
-            self.generateAttackSound(volume=0.1, fadeout=700)
+            self.generateAttackSound(volume=0.1, fadeout=1000)
 
 
             particles_color         =  [100,100,100 ]
@@ -122,7 +124,7 @@ class Player:
             Cambia las animaciones en caso de que sea necesario cambiarlas teniendo en cuenta el estado del personaje
         """
         animation_manager = self.animation_manager
-        if ("stand" in animation_manager.current_animation_name) and (not "attack" in animation_manager.current_animation_name):
+        if ("stand" in animation_manager.current_animation_name) and (not "attack" in animation_manager.current_animation_name) or (not (self.moving()) and (not (self.attacking["right"] or self.attacking["left"]))):
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) -1 )) :
                 if (animation_manager.current_animation_name == "stand_1") :
                     random_ = randint(1,50)
@@ -154,7 +156,7 @@ class Player:
                     animation_manager.changeAnimation("jump_momentum_positivo")
                 elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1)):
                     animation_manager.current_animation_frame = 0
-        if (((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and ("stand" in animation_manager.current_animation_name)) or (animation_manager.current_animation_name == "attacking_stand"):
+        if ((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and (not (self.moving())):
             if animation_manager.current_animation_name != "attacking_stand":
                 animation_manager.changeAnimation("attacking_stand")
             elif animation_manager.current_animation_index == 3 and (self.attacking["right"] or self.attacking["left"]):
@@ -169,7 +171,7 @@ class Player:
             else:
                 if ((self.attacking["right"] and self.moving_right) or (self.attacking["left"] and self.moving_left)):
                     new_animation = "attacking_running_right"
-                elif (self.attacking["right"] and self.moving_left) or (self.attacking["left"] and self.moving_right):
+                if (self.attacking["right"] and self.moving_left) or (self.attacking["left"] and self.moving_right):
                     new_animation = "attacking_running_left"
                 if (new_animation != animation_manager.current_animation_name) and (new_animation != None):
                     animation_manager.changeAnimation(new_animation)
@@ -260,8 +262,10 @@ class Player:
         """
         if (self.moving_left and self.attacking["left"]) or (self.attacking["left"] and self.moving_right) or (self.moving_left and (not self.attacking["right"])) or (self.attacking["left"] and (not self.moving_right)):
             self.last_direction = "left"
-        elif (self.moving_right and self.attacking["right"]) or (self.attacking["right"] and self.moving_left) or (self.moving_right and (not self.attacking["left"])) or (self.attacking["right"] and (not self.moving_left)):
+        if (self.moving_right and self.attacking["right"]) or (self.attacking["right"] and self.moving_left) or (self.moving_right and (not self.attacking["left"])) or (self.attacking["right"] and (not self.moving_left)):
             self.last_direction = "right"
+    def renderLiveBar(self, surface, scroll):
+        pass
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
@@ -363,6 +367,83 @@ class BackgroundRect:
         rect_pos = [self.rect.x - (scroll[0] * self.scroll_proportion), self.rect.y - (scroll[1] * self.scroll_proportion)]
         pygame.draw.rect(surface, self.color, [rect_pos[0], rect_pos[1], self.rect.width, self.rect.height])
 
+class Enemy:
+    def __init__(self, position, attack_timing, size, color):
+        self.width          = size[0]
+        self.height         = size[1]
+        self.rect           = pygame.Rect([position[0], position[1], self.width, self.height])
+        self.attack_timing  = attack_timing
+        self.max_attack_timing = attack_timing
+        self.color          = color
+        self.in_floor       =   False
+        self.y_momentum     = 0
+    def update(self, gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_speed):
+        """
+            Actualiza la altura y el momentum en y del enemigo. Ademas, ataca en caso de que las condiciones esten dadas
+        """
+        enemy_movement = [0,0]
+        self.y_momentum += gravity
+        if self.y_momentum > max_gravity:
+            self.y_momentum = max_gravity
+        enemy_movement[1] += self.y_momentum
+        colisions = self.move(enemy_movement, cell_list)
+        if colisions["bottom"]:
+            self.in_floor = True
+            self.y_momentum = 0
+        else:
+            self.in_floor = False
+        if self.attack_timing == 0:
+            self.attack_timing = self.max_attack_timing
+            self.attack(player, bullet_list, bullet_size, scroll, bullet_speed)
+        else:
+            self.attack_timing -= 1
+    def attack(self, player, bullet_list, bullet_size, scroll, bullet_speed):
+        """
+            Dispara al personaje
+        """
+        # referencia de los catetos : personaje
+        initial_pos     = [self.rect.left - scroll[0] - 10 if player.rect.right <= self.rect.left else self.rect.right - scroll[0] + 10 , self.rect.y - 20 - scroll[1]]
+        catetos = [((player.rect.x + (player.width//2) - initial_pos[0])), ((player.rect.y + (player.height//2) - initial_pos[1]))]
+        hipotenusa = sum([i*i for i in catetos])
+        proportion = hipotenusa/bullet_speed*bullet_speed
+        catetos = [i/proportion for i in catetos]
+        print(((catetos[0]*catetos[0]) + (catetos[1] * catetos[1])) == bullet_speed)
+        new_bullet = Bullet(initial_pos, catetos,bullet_size)
+        bullet_list.append(new_bullet)
+    def move(self, enemy_movement, cell_list) -> dict:
+        """
+            Mueve al enemigo usando el enemy_movement recibido por parametro, retorna un diccionario que simboliza las direcciones en las cuales
+            ha habido una colision, ademas de arreglar dichas colisiones
+        """
+        colisions = {
+            "right" : False,
+            "left"  : False,
+            "top"  : False,
+            "bottom"  : False,
+        }
+        self.rect.x += enemy_movement[0]
+        for cell in colisionTest(self.rect, cell_list):
+            if enemy_movement[0] > 0:
+                self.rect.right = cell.left
+                colisions["right"] = True
+            elif enemy_movement[0] < 0:
+                self.rect.left = cell.right
+                colisions["left"] = True
+        # movemos el personaje en y, buscamos colisiones y corregimos
+        self.rect.y += enemy_movement[1]
+        for cell in colisionTest(self.rect, cell_list):
+            if enemy_movement[1] > 0:
+                self.rect.bottom = cell.top
+                colisions["bottom"] = True
+            elif enemy_movement[1] < 0:
+                self.rect.top = cell.bottom
+                colisions["top"] = True
+        return colisions
+    def render(self, surface, scroll):
+        """
+            Renderiza al personaje
+        """
+        pygame.draw.rect(surface, self.color, [self.rect.x - scroll[0], self.rect.y - scroll[1], self.width, self.height])
 
 
 def generateBackgroundRects(levels, columnas, capas, initial_pos, space_diff, rect_size, rect_color):
@@ -386,7 +467,7 @@ def generateBackgroundRects(levels, columnas, capas, initial_pos, space_diff, re
         initial_pos[1] += 200
     middle =initial_pos[0]  + 600
     return rects, middle
-def updateBullets(bullets_list, cell_list, surface_size, scroll, particles):
+def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
         cuyo alcance haya terminado. Ademas genera las particulas pertinentes en caso de que la bala colisione y siga siendo visible
@@ -398,47 +479,34 @@ def updateBullets(bullets_list, cell_list, surface_size, scroll, particles):
         else:
             last_bullet_pos = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]]
             bullet.updatePosition()
-            colisions = colisionTest(pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]]), cell_list)
-            if len(colisions) > 0:
+            bullet_real_rect = pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]])
+            cell_colisions = colisionTest(bullet_real_rect, cell_list)
+            if len(cell_colisions) > 0:
                 bullets_list.remove(bullet)
-                colied_tile = colisions[0]
+                colied_tile = cell_colisions[0]
                 for i in range(1,10):
                     particle_initial_pos    =  [colied_tile.right if last_bullet_pos[0] > colied_tile.right else colied_tile.left, last_bullet_pos[1]]
-                    particle_size           = 3
-                    particle_color          = [100,100,100].copy()
-                    particle_move           =   [randint(-2,2),randint(-1,1)].copy() 
-                    particle_size_change    =   0.1
-                    particle_move_change    = [0,0.1]
-                    particle_color_change   = [0,0,0]
-                    new_particle            = Particle(
-                        particle_initial_pos,
-                        particle_size, 
-                        particle_color, 
-                        particle_move, 
-                        particle_size_change, 
-                        particle_move_change, 
-                        particle_color_change, 
-                        False)
+                    new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
                     particles.append(new_particle)
             else:
-                for i in range(1,3):
-                    particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
-                    particle_size           = 3
-                    particle_color          = [100,100,100].copy()
-                    particle_move           =   [0,1].copy() if i == 1 else [0,-1]
-                    particle_size_change    =   0.1
-                    particle_move_change    = [0,0]
-                    particle_color_change   = [0,0,0]
-                    new_particle            = Particle(
-                        particle_initial_pos,
-                        particle_size, 
-                        particle_color, 
-                        particle_move, 
-                        particle_size_change, 
-                        particle_move_change, 
-                        particle_color_change, 
-                        False)
-                    particles.append(new_particle)
+                enemy_rect_list = [enemy.rect for enemy in enemy_list]
+                enemys_colisions = colisionTest(bullet_real_rect, enemy_rect_list)
+                if len(enemys_colisions) > 0:
+                    bullets_list.remove(bullet)
+                    colied_enemy_rect = enemys_colisions[0]
+                    colied_enemy = enemy_list[enemy_rect_list.index(colied_enemy_rect)]
+                    colied_enemy.width-= bullet_power
+                    for i in range(1,10):
+                        particle_initial_pos    =  [colied_enemy_rect.right if last_bullet_pos[0] > colied_enemy_rect.right else colied_enemy_rect.left, last_bullet_pos[1]]
+                        new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
+                        particles.append(new_particle)
+                    pass
+                else:
+                    for i in range(1,3):
+                        particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
+                        particle_move           =   [1 if bullet.move[0] < 0 else -1,1].copy() if i == 1 else [ 1 if bullet.move[0] < 0 else -1,-1]
+                        new_particle            = Particle(particle_initial_pos,size=3, color=[100,100,100].copy(), move=particle_move.copy(), size_change=0.1, move_change=[0,0], color_change=[0,0,0], is_colider=False)
+                        particles.append(new_particle)
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
@@ -611,3 +679,21 @@ def watchable(rect, surface, player_pos, surface_peace):
     """
     surface_size = [surface.get_width(), surface.get_height()]
     return ((rect.right > (player_pos[0] - (surface_size[0]//surface_peace))) and (rect.left < (player_pos[0] + (surface_size[0]//surface_peace))) and (rect.top < (player_pos[1] + (surface_size[1]//surface_peace))) and (rect.bottom > (player_pos[1] - (surface_size[1]//surface_peace))))
+
+def renderEnemys(enemy_list, scroll, surface):
+    for enemy in enemy_list:
+        enemy.render(surface, scroll)
+
+def updateEnemys(enemy_list, gravity, max_gravity, cell_list, player, bullet_list, generation_timing, bullet_size, scroll, bullet_speed):
+    for enemy in enemy_list.copy():
+        enemy.update(gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_speed)
+        if enemy.width <= 0:
+            enemy_list.remove(enemy)
+
+    if (randint(1,generation_timing) == 1):
+        size                = [randint(30,40),randint(50,70)]
+        initial_position    = [choice(cell_list).x, 0]
+        attack_timing       = randint(10,30)
+        color               = (100,100,100)
+        enemy_list.append(Enemy(initial_position, attack_timing , size, color))
+
