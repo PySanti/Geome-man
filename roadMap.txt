@@ -1,5 +1,12 @@
 - arreglar problemas de sincrionizacion en la animacion
-- implemenentar enemigos
+- perfeccionar animacion de personaje
 - agregar efectos de sonido de colision con elementos del ambiente y con enemigos
-- arreglar instancias de particulas para que no ocupen tanto espacio
-- refactorizar la funcion "updateBullets"
+- implementar que los enemigos vuelen y se muevan por el aire
+- implementar barra de vida de los enemigos
+- mejorar el efecto de disparo del personaje
+- implementar sonidos de disparo de enemigo, generacion de enemigo, muerte de enemigo, explosion de bala de enemigo, sonido de hit al personaje
+- agregar saltos antigravitatorios, desenfoques en momentum negativo, dashes
+- balas de enemigos mucho mas grandes, lentas y que desprendan particulas
+- perfeccionar animacion de disparo, particulas desprendidas, explosion mucho mas epica y que cause aumento en el momentum, usar colores mas llamativos
+- modificar colores de las particulas
+- agregar rango de explosion de balas de enemigos y que empiezen a quitar vida

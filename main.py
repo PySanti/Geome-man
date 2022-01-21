@@ -23,7 +23,7 @@ SCROLL_SMOOTH                           =   20
 
 
 JUMP_SOUND                              =   pygame.mixer.Sound(ASSETS_PATH + "/efects/jump/jump.wav")
-JUMP_FORCE                              =   -8
+JUMP_FORCE                              =   -15
 
 
 PIV_SURFACE_SIZE                        =   [800, 400]
@@ -37,15 +37,15 @@ PLAYER                                  =   engine.Player(
     jump_sound              = JUMP_SOUND, 
     animation_manager       = AnimationController(engine.animationDict(PLAYER_SIZE, None, "material/animations/", True),PLAYER_ANIMATION_FPS, "stand_1",False ), 
     size                    = PLAYER_SIZE,
-    cadencia_de_arma        = 10,
+    cadencia_de_arma        = 20,
     attack_sound_path  = "material/efects/shots/cero.wav")
 PARTICLES_PER_SHOT                      =   3
 
-BACKGROUND_COLOR                        =   ( 100, 100, 100)
+BACKGROUND_COLOR                        =   ( 50, 50, 50)
 BACKGROUND_MUSIC                        =   pygame.mixer.music.load(ASSETS_PATH + "/efects/background/theme.wav")
-BULLETS_SIZE                            =   [20, 3]
+BULLETS_SIZE                            =   [10, 3]
 BULLETS_LIST                            =   []
-BULLETS_SPEED                           =  30
+BULLETS_SPEED                           =   30
 CELL_LIST                               =   []
 CLOCK                                   =   pygame.time.Clock()
 
@@ -72,19 +72,21 @@ pygame.mouse.set_visible(False)
 
 #   recordar que la lista de rectangulos de fondo contiene "microlistas" que almacenan las capas de las columnas
 #           proporcion de scroll, color, rect
-BACKGROUND_RECTS, MIDDLE_RECT_DECORATION        =   engine.generateBackgroundRects(
-    levels=3,
-    columnas=12,
-    capas= 7, 
-    initial_pos=[0,0], 
-    space_diff= 30,
-    rect_size=[100,150], 
-    rect_color={1: 100, 2:100,3:100})
-PARTICLES                                       =   []
-ENEMY_LIST                                      =   []
-ENEMY_LIST_GENERATION_TIMING                    =   1000
-BULLET_FORCE                                    =   3
+BACKGROUND_RECTS        =   engine.generateBackgroundRects()
+PARTICLES                                   =   []
+ENEMY_LIST                                  =   []
+ENEMY_GENERATION_TIMING                     =   10
+BULLET_FORCE                                =   20
+BULLET_ALCANCE                              =   100 # recordar que el alcance se define como la cantidad de iteraciones que dura la vida de la bala
+ENEMY_BULLET_LOWEST_SPEED                   =   2
+ENEMY_SHOOTING_TIMING_RANGE                 =   [40,50]
+ENEMY_BULLET_SMOOTH                         =   100
+LIVE_ENEMY_RANGE                            =   [20,30]
+PLAYER_X_MOMENTUM_DECREASE                  =   2
+ENEMY_BULLETS_MOVE_CHANGE                   =   0.2
 
+MAX_SURFACE_SIZE    =   [1600,800]
+PEND_ZOOM_MOVE  =   [0,0]
 
 
 
@@ -94,15 +96,15 @@ while not EXIT:
 
     #   ````````        update
     PLAYER.updateShotsInfo(SCROLL, BULLETS_LIST, BULLETS_SPEED, BULLETS_SIZE, PARTICLES, PARTICLES_PER_SHOT)
-    PLAYER.updateState(GRAVITY, MAX_GRAVITY, CELL_LIST)
-    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES, ENEMY_LIST, BULLET_FORCE)
+    PLAYER.updateState(GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER_X_MOMENTUM_DECREASE)
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
     engine.updateParticles(PARTICLES, CELL_LIST)
-    engine.updateEnemys(ENEMY_LIST, GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER, BULLETS_LIST, ENEMY_LIST_GENERATION_TIMING, BULLETS_SIZE, SCROLL, BULLETS_SPEED)
+    engine.updateEnemys(ENEMY_LIST, GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER, BULLETS_LIST, ENEMY_GENERATION_TIMING, BULLETS_SIZE, SCROLL, BULLET_ALCANCE, ENEMY_BULLET_LOWEST_SPEED, ENEMY_SHOOTING_TIMING_RANGE, LIVE_ENEMY_RANGE, ENEMY_BULLET_SMOOTH)
+    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES, ENEMY_LIST, BULLET_FORCE, PLAYER, ENEMY_BULLETS_MOVE_CHANGE)
 
 
     #   ````````        render
-    engine.renderBackgroundRects(PLAYER.rect, MIDDLE_RECT_DECORATION, BACKGROUND_RECTS, PIV_SURFACE, SCROLL)
+    engine.renderBackgroundRects(BACKGROUND_RECTS, PIV_SURFACE, SCROLL)
     PLAYER.render(PIV_SURFACE, SCROLL)
     engine.printMap(TILE_SIZE, CELL_LIST, CELL_COLOR_CHANGE, PIV_SURFACE, GAME_MAP, SCROLL, SPACE_CHAR, [PLAYER.rect.x, PLAYER.rect.y])
     engine.renderParticles(PARTICLES, PIV_SURFACE, SCROLL)

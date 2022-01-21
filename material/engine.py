@@ -14,6 +14,7 @@ class Player:
         self.height                 =   size[1]
         self.rect                   =   pygame.Rect([1000,350, self.width, self.height])
         self.y_momentum             =   0
+        self.x_momentum             =   0
         self.moving_right           =   False
         self.moving_left            =   False
         self.in_floor               =   False
@@ -30,7 +31,7 @@ class Player:
         self.attack_sound           =   pygame.mixer.Sound(attack_sound_path)
         self.look_back_couter       =   0
         self.look_back_max_counter  =   None
-        self.last_direction         =   None
+        self.last_direction         =   "right"
         self.live                   =   100
     def updateSounds(self):
         """
@@ -42,7 +43,7 @@ class Player:
         elif ((not self.moving()) or (not self.in_floor)) and (self.walking_sound_runing):
             self.steps_sound.fadeout(100)
             self.walking_sound_runing = False
-    def updateState(self, gravity, max_gravity, cell_list):
+    def updateState(self, gravity, max_gravity, cell_list, x_momentum_decrease):
         """
             Actualiza la posicion del personaje llamando al metodo move, actualiza el momentum (para ello hace uso de los parametros "gravity" y "max_gravity" ).
             Ademas, actualiza las animaciones a traves del metodo animationCheck y updateAnimation, los sonidos a traves del metodo updateSounds.
@@ -53,6 +54,15 @@ class Player:
             player_movement[0] += self.speed
         elif self.moving_left:
             player_movement[0] -= self.speed
+        
+        if self.x_momentum < 0:
+            self.x_momentum += x_momentum_decrease 
+        elif self.x_momentum > 0:
+            self.x_momentum += -x_momentum_decrease
+        if abs(self.x_momentum) <= x_momentum_decrease:
+            self.x_momentum = 0
+        player_movement[0] += self.x_momentum
+
 
         self.y_momentum += gravity
         if self.y_momentum > max_gravity:
@@ -86,14 +96,14 @@ class Player:
         """
         if self.amoo > 0:
             bulletInitialPos    = getScrolledPosition(scroll, [self.rect.right + 10 if self.attacking["right"] else self.rect.left - 10, self.rect.bottom - self.height//2])
-            new_bullet          = Bullet(bulletInitialPos,  [bullets_speed if self.attacking["right"] else -bullets_speed, 0], bullets_size)
+            new_bullet          = Bullet(bulletInitialPos,  [bullets_speed if self.attacking["right"] else -bullets_speed, 0], bullets_size, "player", None)
             bullets_list.append(new_bullet)
             self.amoo -= 1
             self.generateAttackSound(volume=0.1, fadeout=1000)
 
 
             particles_color         =  [100,100,100 ]
-            particles_move          =  [randint(-1,1),-1] 
+            particles_move          =  [0,-1] 
             particles_move_change   =   [0, 0.1] 
             particles_color_change =  [0,0,0]
             particles_size_change  =  0.05
@@ -102,8 +112,6 @@ class Player:
 
             for i in range(1, particles_per_shot+1):
                 particle_pos = [self.rect.x + self.width,self.rect.y + (self.height//2) ] if self.attacking["right"] else [self.rect.x ,self.rect.y + (self.height//2) ] 
-                particle_pos[0] += randint(-move_range,move_range)
-                particle_pos[1] += randint(-move_range,move_range)
                 new_particle     = Particle(
                     particle_pos.copy(), 
                     particles_size,
@@ -265,26 +273,37 @@ class Player:
         if (self.moving_right and self.attacking["right"]) or (self.attacking["right"] and self.moving_left) or (self.moving_right and (not self.attacking["left"])) or (self.attacking["right"] and (not self.moving_left)):
             self.last_direction = "right"
     def renderLiveBar(self, surface, scroll):
-        pass
+        live_piece  =   3
+        if self.last_direction == "right":
+            pygame.draw.rect(surface, (0, 255, 0), [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+        else:
+            pygame.draw.rect(surface, (0, 255, 0), [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
     """
-    def __init__(self, initial_pos,  move, size):
+    def __init__(self, initial_pos,  move, size, owner, time_live):
         self.position   = initial_pos
         self.move       = move
         self.size       = size
+        self.owner      =   owner
+        self.move_change=   [0,0]
+        self.time_live  =   time_live
+        self.current_iter = 0
     def updatePosition(self):
         """
         Actualiza la posicion de la bala self usando el atributo move
         """
         self.position[0] += self.move[0]
         self.position[1] += self.move[1]
+        if self.time_live != None: # recordar que a las balas del player se les asigna un tiempo de vida None ya que estas no tienen tiempo de vida :|
+            self.current_iter += 1
     def render(self, surface):
         """
             Renderiza la imagen de la bala en "surface"
-        """
-        pygame.draw.rect(surface,  (100,100,100), [self.position[0], self.position[1], self.size[0], self.size[1]])
+        """ 
+        pygame.draw.circle(surface,  (100,100,100), self.position, self.size[0] if self.owner == "enemy" else self.size[1])
 class Particle:
     """
         Clase creada para el mantenimiento de las particulas
@@ -366,9 +385,8 @@ class BackgroundRect:
     def render(self, surface, scroll):
         rect_pos = [self.rect.x - (scroll[0] * self.scroll_proportion), self.rect.y - (scroll[1] * self.scroll_proportion)]
         pygame.draw.rect(surface, self.color, [rect_pos[0], rect_pos[1], self.rect.width, self.rect.height])
-
 class Enemy:
-    def __init__(self, position, attack_timing, size, color):
+    def __init__(self, position, attack_timing, size, color, live):
         self.width          = size[0]
         self.height         = size[1]
         self.rect           = pygame.Rect([position[0], position[1], self.width, self.height])
@@ -377,7 +395,8 @@ class Enemy:
         self.color          = color
         self.in_floor       =   False
         self.y_momentum     = 0
-    def update(self, gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_speed):
+        self.live           =   live
+    def update(self, gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll,  bullet_alcance, bullet_lowest_speed, bullet_smooth):
         """
             Actualiza la altura y el momentum en y del enemigo. Ademas, ataca en caso de que las condiciones esten dadas
         """
@@ -394,22 +413,19 @@ class Enemy:
             self.in_floor = False
         if self.attack_timing == 0:
             self.attack_timing = self.max_attack_timing
-            self.attack(player, bullet_list, bullet_size, scroll, bullet_speed)
+            self.attack(player, bullet_list, bullet_size, scroll, bullet_alcance, bullet_lowest_speed, bullet_smooth)
         else:
             self.attack_timing -= 1
-    def attack(self, player, bullet_list, bullet_size, scroll, bullet_speed):
+    def attack(self, player, bullet_list, bullet_size, scroll, bullet_alcance, bullet_lowest_speed, bullet_smooth):
         """
             Dispara al personaje
         """
         # referencia de los catetos : personaje
-        initial_pos     = [self.rect.left - scroll[0] - 10 if player.rect.right <= self.rect.left else self.rect.right - scroll[0] + 10 , self.rect.y - 20 - scroll[1]]
-        catetos = [((player.rect.x + (player.width//2) - initial_pos[0])), ((player.rect.y + (player.height//2) - initial_pos[1]))]
-        hipotenusa = sum([i*i for i in catetos])
-        proportion = hipotenusa/bullet_speed*bullet_speed
-        catetos = [i/proportion for i in catetos]
-        print(((catetos[0]*catetos[0]) + (catetos[1] * catetos[1])) == bullet_speed)
-        new_bullet = Bullet(initial_pos, catetos,bullet_size)
-        bullet_list.append(new_bullet)
+        initial_pos     = [self.rect.x - scroll[0] + (self.width//2), self.rect.y - scroll[1] + (self.height//2)]
+        bullet_speed = bulletEnemySpeed(getScrolledPosition(scroll, [player.rect.x, player.rect.y]), initial_pos, bullet_smooth)
+        if (len([i for i in bullet_speed if (abs(i)) <= bullet_lowest_speed]) <= 1):
+            new_bullet = Bullet(initial_pos, bullet_speed,bullet_size, "enemy",bullet_alcance)
+            bullet_list.append(new_bullet)
     def move(self, enemy_movement, cell_list) -> dict:
         """
             Mueve al enemigo usando el enemy_movement recibido por parametro, retorna un diccionario que simboliza las direcciones en las cuales
@@ -444,69 +460,51 @@ class Enemy:
             Renderiza al personaje
         """
         pygame.draw.rect(surface, self.color, [self.rect.x - scroll[0], self.rect.y - scroll[1], self.width, self.height])
+        pygame.draw.rect(surface, (0,255,0), [self.rect.x - ((self.live-self.width)//2) - scroll[0], self.rect.y - 5 - scroll[1], self.live, 3])
 
 
-def generateBackgroundRects(levels, columnas, capas, initial_pos, space_diff, rect_size, rect_color):
+def generateBackgroundRects():
     """
         Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
     """
-    initial_x, initial_y = initial_pos
-    rects = [[] for i in range(columnas+1)]
-    for a in range(1,levels+1):
-        for i in range(0, columnas):
-            color           =   rect_color.copy()
-            scroll_propor       = 0.1
-            for a in range(1, capas+1):
-                color[1]            += ((155)//capas)
-                initial_pos[0] += space_diff 
-                scroll_propor       +=  0.1
-                curr_rect           = pygame.Rect([initial_pos[0],initial_pos[1],rect_size[0], rect_size[1]])
-                rect                = BackgroundRect([value for key,value in color.items() ],curr_rect, scroll_propor)
-                rects[i].append(rect)
-        initial_pos[0] = initial_x 
-        initial_pos[1] += 200
-    middle =initial_pos[0]  + 600
-    return rects, middle
-def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power):
+    initial_color = {1:50,2:50,3:50}
+    initial_position = [-100,300]
+    size =   [5000,100]
+    capas   =   40
+    capas_spacediff =   30
+    rects = []
+    scroll_proportion = 0.1
+    for i in range(1,2):
+        for i in range(1,capas+1):
+            new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
+            initial_position[0] -= capas_spacediff
+            initial_position[1] -= capas_spacediff
+            initial_color[1] += 10
+            initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
+            scroll_proportion += (0.9/capas)
+            rects.append(new_rect)
+    return rects
+
+
+
+def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
         cuyo alcance haya terminado. Ademas genera las particulas pertinentes en caso de que la bala colisione y siga siendo visible
     """
     copy_list = bullets_list.copy()
     for bullet in copy_list:
-        if  (surface_size[0] < bullet.position[0]) or (bullet.position[0] < 0):
+        if  ((surface_size[0] < bullet.position[0]) or (bullet.position[0] < 0)) and (bullet.owner == "player"):
             bullets_list.remove(bullet)
         else:
             last_bullet_pos = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]]
             bullet.updatePosition()
             bullet_real_rect = pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]])
-            cell_colisions = colisionTest(bullet_real_rect, cell_list)
-            if len(cell_colisions) > 0:
-                bullets_list.remove(bullet)
-                colied_tile = cell_colisions[0]
-                for i in range(1,10):
-                    particle_initial_pos    =  [colied_tile.right if last_bullet_pos[0] > colied_tile.right else colied_tile.left, last_bullet_pos[1]]
-                    new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
-                    particles.append(new_particle)
-            else:
-                enemy_rect_list = [enemy.rect for enemy in enemy_list]
-                enemys_colisions = colisionTest(bullet_real_rect, enemy_rect_list)
-                if len(enemys_colisions) > 0:
-                    bullets_list.remove(bullet)
-                    colied_enemy_rect = enemys_colisions[0]
-                    colied_enemy = enemy_list[enemy_rect_list.index(colied_enemy_rect)]
-                    colied_enemy.width-= bullet_power
-                    for i in range(1,10):
-                        particle_initial_pos    =  [colied_enemy_rect.right if last_bullet_pos[0] > colied_enemy_rect.right else colied_enemy_rect.left, last_bullet_pos[1]]
-                        new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
-                        particles.append(new_particle)
-                    pass
-                else:
-                    for i in range(1,3):
-                        particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
-                        particle_move           =   [1 if bullet.move[0] < 0 else -1,1].copy() if i == 1 else [ 1 if bullet.move[0] < 0 else -1,-1]
-                        new_particle            = Particle(particle_initial_pos,size=3, color=[100,100,100].copy(), move=particle_move.copy(), size_change=0.1, move_change=[0,0], color_change=[0,0,0], is_colider=False)
-                        particles.append(new_particle)
+            if bullet.owner == "player":
+                checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll)
+            elif bullet.owner == "enemy":
+                updateEnemyBulletsMoveChange(bullet, bullet_move_change)
+                checkEnemyBullets(bullet, scroll, particles, player, bullets_list, bullet_real_rect)
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
@@ -537,7 +535,7 @@ def eventHandling(eventList, player,EXIT, jump_force, particles):
                     for i in range(1,randint(3,8)):
                         particle_pos            = [player.rect.x + (player.width//2), player.rect.bottom-5].copy()
                         particle_size           = 5
-                        particle_color          = [100,100,100].copy()
+                        particle_color          = [70,70,70].copy()
                         particle_move           = [randint(-5,5), -3].copy()
                         particle_size_change    = 0.1
                         if particle_move[0] < 0:
@@ -641,24 +639,13 @@ def updateScroll(scroll, player, surface_size, scroll_smooth):
     """
     scroll[0] += (player.rect.x - scroll[0] - surface_size[0]//2)//scroll_smooth
     scroll[1] += (player.rect.y - scroll[1] - surface_size[1]//2)//scroll_smooth
-def renderBackgroundRects(player_rect, middle_decoration, background_rects, surface, scroll):
+def renderBackgroundRects(background_rects, surface, scroll):
     """
-        Renderiza los rectangulos de fondo. Recordar que los rectangulos estan almacenados en una lista, 
-        y organizados en listas (dentro de la primera lista) que representan las 
-        columnas de arriba a abajo. Esto es necesario para casos en los que 
-        el personaje este por detras de cierto punto en donde las capas empiezan a 
-        solaparse por el orden de renderizado. Si se almacenan en columas, 
-        unicamente basta con saber cuando el personaje se encuentre en aquel punto y renderizar las columnas en sentido contrario
+        Renderiza los rectangulos de fondo. 
     """
-    if (player_rect.x) >= middle_decoration:
-        for columna in background_rects:
-            for capa in columna:
-                capa.render(surface, scroll)
-    else:
-        len_ = len(background_rects)
-        for i in range(0,len_):
-            for  capa in background_rects[len_ - i -1 ]:
-                capa.render(surface, scroll)
+    for capa in background_rects:
+        capa.render(surface, scroll)
+
 def renderParticles(particle_list, surface, scroll):
     """
         Renderiza las particulas vigentes
@@ -679,21 +666,114 @@ def watchable(rect, surface, player_pos, surface_peace):
     """
     surface_size = [surface.get_width(), surface.get_height()]
     return ((rect.right > (player_pos[0] - (surface_size[0]//surface_peace))) and (rect.left < (player_pos[0] + (surface_size[0]//surface_peace))) and (rect.top < (player_pos[1] + (surface_size[1]//surface_peace))) and (rect.bottom > (player_pos[1] - (surface_size[1]//surface_peace))))
-
 def renderEnemys(enemy_list, scroll, surface):
     for enemy in enemy_list:
         enemy.render(surface, scroll)
-
-def updateEnemys(enemy_list, gravity, max_gravity, cell_list, player, bullet_list, generation_timing, bullet_size, scroll, bullet_speed):
+def updateEnemys(enemy_list, gravity, max_gravity, cell_list, player, bullet_list, generation_timing, bullet_size, scroll, bullet_alcance, bullet_lowest_speed, enemy_shooting_timing_range, live_enemy_range, bullet_smooth):
     for enemy in enemy_list.copy():
-        enemy.update(gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_speed)
-        if enemy.width <= 0:
-            enemy_list.remove(enemy)
+        enemy.update(gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_alcance, bullet_lowest_speed, bullet_smooth)
 
-    if (randint(1,generation_timing) == 1):
+
+    if (randint(1,generation_timing) == 1) and (len(enemy_list)  == 0):
         size                = [randint(30,40),randint(50,70)]
         initial_position    = [choice(cell_list).x, 0]
-        attack_timing       = randint(10,30)
+        attack_timing       = randint(enemy_shooting_timing_range[0], enemy_shooting_timing_range[1])
         color               = (100,100,100)
-        enemy_list.append(Enemy(initial_position, attack_timing , size, color))
+        live                =   randint(live_enemy_range[0], live_enemy_range[1])
+        enemy_list.append(Enemy(initial_position, attack_timing , size, color, live))
+def getProportionalTriangle():
+    pass
+def bulletEnemySpeed(player_pos, enemy_pos, bullet_smooth):
+    """
+        Retorna el punto de conexion del triangulo limite proporcional  creado por la mira, y el arma. Necesario para establecer una velocidad fija y 
+        absoluta de las balas independiente de la posicion de la mira
+    """
+    bullet_speed = [(player_pos[0] - enemy_pos[0])/bullet_smooth, (player_pos[1] + randint(-50,50) - enemy_pos[1])/bullet_smooth]
+    return bullet_speed
+def makePlayerShotCellColision(cell_colisions, last_bullet_pos, particles):
+    colied_tile = cell_colisions[0]
+    for i in range(1,10):
+        particle_initial_pos    =  [colied_tile.right if last_bullet_pos[0] > colied_tile.right else colied_tile.left, last_bullet_pos[1]]
+        new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
+        particles.append(new_particle)
+def checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll):
+    cell_colisions = colisionTest(bullet_real_rect, cell_list)
+    if len(cell_colisions) > 0:
+        bullets_list.remove(bullet)
+        makePlayerShotCellColision(cell_colisions, last_bullet_pos, particles)
+    else:
+        if not (checkPlayerShotEnemyColision(enemy_list, bullet_real_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet)):
+            for i in range(1,3):
+                particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
+                particle_move           =   [1 if bullet.move[0] < 0 else -1,1].copy() if i == 1 else [ 1 if bullet.move[0] < 0 else -1,-1]
+                new_particle            = Particle(particle_initial_pos,size=3, color=[100,100,100].copy(), move=particle_move.copy(), size_change=0.1, move_change=[0,0], color_change=[0,0,0], is_colider=False)
+                particles.append(new_particle)
+def checkPlayerShotEnemyColision(enemy_list, bullet_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet):
+    enemy_rect_list = [enemy.rect for enemy in enemy_list]
+    enemys_colisions = colisionTest(bullet_rect, enemy_rect_list)
+    if len(enemys_colisions) > 0:
+        bullets_list.remove(bullet)
+        colied_enemy_rect = enemys_colisions[0]
+        colied_enemy = enemy_list[enemy_rect_list.index(colied_enemy_rect)]
+        colied_enemy.live-= bullet_power
+        if colied_enemy.live > 0:
+            for i in range(1,10):
+                particle_initial_pos    =  [colied_enemy_rect.right if last_bullet_pos[0] > colied_enemy_rect.right else colied_enemy_rect.left, last_bullet_pos[1]]
+                new_particle            = Particle(position= particle_initial_pos,size=3,color = [100,100,100].copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
+                particles.append(new_particle)
+        else:
+            enemy_list.remove(colied_enemy)
+            for i in range(1,10):
+                particle_initial_pos    = [colied_enemy.rect.x + colied_enemy.width//2 , colied_enemy.rect.y + colied_enemy.height//2 ].copy()
+                particle_move           =   [bullet.move[0]//6 + randint(-3,3), bullet.move[1]//6 + randint(-3,3)]
+                new_particle            = Particle(
+                    particle_initial_pos,
+                    size=3,
+                    color=[100,100,100].copy(), 
+                    move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,0,0], is_colider=True)
+                particles.append(new_particle)
+        return True
+    else:
+        return False
+def checkEnemyBullets(bullet, scroll, particles, player, bullets_list, bullet_real_rect):
+    if bullet.current_iter >= bullet.time_live:
+        for i in range(1,30):
+            particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
+            particle_move           =   [randint(-5,5), randint(-5,3)]
+            new_particle            = Particle(
+                particle_initial_pos,
+                size=5, 
+                color=[100,100,100].copy(), 
+                move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
+            particles.append(new_particle)
+        bullets_list.remove(bullet)
+    else:
+        if player.rect.colliderect(bullet_real_rect):
+            player.y_momentum += bullet.move[1]*2
+            player.x_momentum += bullet.move[0]*2
+            print("hit")
+            for i in range(1,20):
+                particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
+                particle_move           =   [randint(-5,5), randint(-5,3)]
+                new_particle            = Particle(
+                    particle_initial_pos,
+                    size=3, 
+                    color=[100,100,100].copy(), 
+                    move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
+                particles.append(new_particle)
+            bullets_list.remove(bullet)
+        else:
+            for i in range(1,2):
+                particle_initial_pos    = [bullet.position[0] - (bullet.size[0]/2) + scroll[0] + randint(-2,2), bullet.position[1] - (bullet.size[1]/2) + scroll[1] + randint(-2,2)].copy()
+                particle_move           =   [randint(-1,1), randint(-1,1)]
+                new_particle            = Particle(
+                    particle_initial_pos,
+                    size=3, 
+                    color=[100,100,100].copy(), 
+                    move=particle_move.copy(), size_change=0.05, move_change=[0,0], color_change=[0,0,0], is_colider=False)
+                particles.append(new_particle)
 
+def updateEnemyBulletsMoveChange(bullet, bullet_move_change):
+    bullet.move[0] += bullet.move_change[0]
+    bullet.move[1] += bullet.move_change[1]
+    bullet.move_change = bullet_move_change if randint(1,2) ==  1 else -bullet_move_change, bullet_move_change if randint(1,2) ==  1 else -bullet_move_change 
