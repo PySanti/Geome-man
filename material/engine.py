@@ -33,6 +33,7 @@ class Player:
         self.look_back_max_counter  =   None
         self.last_direction         =   "right"
         self.live                   =   100
+        self.max_live               = self.live
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -264,6 +265,7 @@ class Player:
         if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
         surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1]])
+        self.renderLiveBar(surface, scroll)
     def updateLastDirection(self):
         """
             Actualiza el atributo "last_direction" dependiendo de las condiciones
@@ -274,10 +276,11 @@ class Player:
             self.last_direction = "right"
     def renderLiveBar(self, surface, scroll):
         live_piece  =   3
+        live_color = generateLiveColor(self.max_live, self.live)
         if self.last_direction == "right":
-            pygame.draw.rect(surface, (0, 255, 0), [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+            pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
         else:
-            pygame.draw.rect(surface, (0, 255, 0), [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+            pygame.draw.rect(surface, live_color, [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
 
 class Bullet:
     """
@@ -396,6 +399,7 @@ class Enemy:
         self.in_floor       =   False
         self.y_momentum     = 0
         self.live           =   live
+        self.max_live       =   self.live
     def update(self, gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll,  bullet_alcance, bullet_lowest_speed, bullet_smooth):
         """
             Actualiza la altura y el momentum en y del enemigo. Ademas, ataca en caso de que las condiciones esten dadas
@@ -460,7 +464,15 @@ class Enemy:
             Renderiza al personaje
         """
         pygame.draw.rect(surface, self.color, [self.rect.x - scroll[0], self.rect.y - scroll[1], self.width, self.height])
-        pygame.draw.rect(surface, (0,255,0), [self.rect.x - ((self.live-self.width)//2) - scroll[0], self.rect.y - 5 - scroll[1], self.live, 3])
+        self.renderLiveBar(surface, scroll)
+    
+    def renderLiveBar(self, surface, scroll):
+        live_color = generateLiveColor(self.max_live, self.live)
+        pygame.draw.rect(surface, live_color, [self.rect.x - ((self.live-self.width)//2) - scroll[0], self.rect.y - 5 - scroll[1], self.live, 3])
+
+
+
+
 
 
 def generateBackgroundRects():
@@ -468,25 +480,30 @@ def generateBackgroundRects():
         Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
     """
     initial_color = {1:50,2:50,3:50}
-    initial_position = [-100,300]
+    initial_x = -100
+    initial_y = 300
+    initial_position = [initial_x,initial_y]
     size =   [5000,100]
-    capas   =   40
+    capas   =   30
     capas_spacediff =   30
     rects = []
     scroll_proportion = 0.1
-    for i in range(1,2):
-        for i in range(1,capas+1):
+    for i in range(1,3):
+        for a in range(1,capas+1):
             new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
             initial_position[0] -= capas_spacediff
-            initial_position[1] -= capas_spacediff
+            initial_position[1] -= capas_spacediff if i == 1 else -capas_spacediff
+            if i == 2:
+                print(initial_position)
             initial_color[1] += 10
             initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
             scroll_proportion += (0.9/capas)
             rects.append(new_rect)
+        initial_position
+        initial_color = {1:50,2:50,3:50}
+        initial_position = [initial_x,initial_y]
+        scroll_proportion = 0.1
     return rects
-
-
-
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
@@ -645,7 +662,6 @@ def renderBackgroundRects(background_rects, surface, scroll):
     """
     for capa in background_rects:
         capa.render(surface, scroll)
-
 def renderParticles(particle_list, surface, scroll):
     """
         Renderiza las particulas vigentes
@@ -736,44 +752,50 @@ def checkPlayerShotEnemyColision(enemy_list, bullet_rect, bullets_list, bullet_p
     else:
         return False
 def checkEnemyBullets(bullet, scroll, particles, player, bullets_list, bullet_real_rect):
-    if bullet.current_iter >= bullet.time_live:
-        for i in range(1,30):
+    def generateExplosion(particles_count, particles_initial_size):
+        for i in range(1,particles_count+1):
             particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
             particle_move           =   [randint(-5,5), randint(-5,3)]
             new_particle            = Particle(
                 particle_initial_pos,
-                size=5, 
+                size=particles_initial_size, 
                 color=[100,100,100].copy(), 
                 move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
             particles.append(new_particle)
+    if bullet.current_iter >= bullet.time_live:
+        generateExplosion(particles_count=30,particles_initial_size=4)
         bullets_list.remove(bullet)
     else:
         if player.rect.colliderect(bullet_real_rect):
-            player.y_momentum += bullet.move[1]*2
-            player.x_momentum += bullet.move[0]*2
-            print("hit")
-            for i in range(1,20):
-                particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
-                particle_move           =   [randint(-5,5), randint(-5,3)]
-                new_particle            = Particle(
-                    particle_initial_pos,
-                    size=3, 
-                    color=[100,100,100].copy(), 
-                    move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,0,0], is_colider=False)
-                particles.append(new_particle)
+            generateExplosion(particles_count=30, particles_initial_size=4)
             bullets_list.remove(bullet)
         else:
-            for i in range(1,2):
-                particle_initial_pos    = [bullet.position[0] - (bullet.size[0]/2) + scroll[0] + randint(-2,2), bullet.position[1] - (bullet.size[1]/2) + scroll[1] + randint(-2,2)].copy()
-                particle_move           =   [randint(-1,1), randint(-1,1)]
-                new_particle            = Particle(
-                    particle_initial_pos,
-                    size=3, 
-                    color=[100,100,100].copy(), 
-                    move=particle_move.copy(), size_change=0.05, move_change=[0,0], color_change=[0,0,0], is_colider=False)
-                particles.append(new_particle)
-
+            generateExplosion(particles_count=1, particles_initial_size=2)
+    
+    if  (bullet.current_iter >= bullet.time_live) or (player.rect.colliderect(bullet_real_rect)):
+        space = [0,0]
+        real_bullet_pos = [bullet.position[0] + scroll[0],bullet.position[1] + scroll[1]]
+        space[0] = ((real_bullet_pos[0] + bullet.size[0]/2) - (player.rect.x + player.width/2))
+        space[1] = ((real_bullet_pos[1] + bullet.size[0]/2) - (player.rect.y + player.height/2))*2
+        limit = 100
+        explosion_force = []
+        for i in space:
+            explosion_force.append((-abs(i) + limit)/5 if abs(i) <= limit else 0)
+        explosion_force[0] = -explosion_force[0] if space[0] > 0  else explosion_force[0]
+        explosion_force[1] = -explosion_force[1] if space[1] > 0  else explosion_force[1]
+        player.x_momentum += explosion_force[0]
+        player.y_momentum += explosion_force[1]
+        player.live -= abs(explosion_force[0])
 def updateEnemyBulletsMoveChange(bullet, bullet_move_change):
     bullet.move[0] += bullet.move_change[0]
     bullet.move[1] += bullet.move_change[1]
-    bullet.move_change = bullet_move_change if randint(1,2) ==  1 else -bullet_move_change, bullet_move_change if randint(1,2) ==  1 else -bullet_move_change 
+    bullet.move_change[0] = bullet_move_change if randint(1,2) ==  1 else -bullet_move_change
+def generateLiveColor(max_live, current_live):
+    live_color = None
+    if  max_live/2 < current_live:
+        live_color = (0,255,0)
+    elif max_live/2 > current_live > max_live/3:
+        live_color = (255, 100,0)
+    else:
+        live_color = (255,0,0)
+    return live_color

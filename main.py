@@ -79,11 +79,11 @@ ENEMY_GENERATION_TIMING                     =   10
 BULLET_FORCE                                =   20
 BULLET_ALCANCE                              =   100 # recordar que el alcance se define como la cantidad de iteraciones que dura la vida de la bala
 ENEMY_BULLET_LOWEST_SPEED                   =   2
-ENEMY_SHOOTING_TIMING_RANGE                 =   [40,50]
+ENEMY_SHOOTING_TIMING_RANGE                 =   [10,20]
 ENEMY_BULLET_SMOOTH                         =   100
 LIVE_ENEMY_RANGE                            =   [20,30]
 PLAYER_X_MOMENTUM_DECREASE                  =   2
-ENEMY_BULLETS_MOVE_CHANGE                   =   0.2
+ENEMY_BULLETS_MOVE_CHANGE                   =   0.5
 
 MAX_SURFACE_SIZE    =   [1600,800]
 PEND_ZOOM_MOVE  =   [0,0]
@@ -109,7 +109,6 @@ while not EXIT:
     engine.printMap(TILE_SIZE, CELL_LIST, CELL_COLOR_CHANGE, PIV_SURFACE, GAME_MAP, SCROLL, SPACE_CHAR, [PLAYER.rect.x, PLAYER.rect.y])
     engine.renderParticles(PARTICLES, PIV_SURFACE, SCROLL)
     engine.renderBullets(BULLETS_LIST, PIV_SURFACE)
-    PLAYER.renderLiveBar(PIV_SURFACE, SCROLL)
     engine.renderEnemys(ENEMY_LIST, SCROLL, PIV_SURFACE)
     WINDOW.blit(pygame.transform.scale(PIV_SURFACE, [WINDOW.get_width(), WINDOW.get_height()]), (0,0))
 
