@@ -93,7 +93,6 @@ class Player:
             self.attack_sound.play().fadeout(fadeout)
         except AttributeError:
             pass
-
     def attack(self, scroll, bullets_list, bullets_speed, bullets_size, particles, particles_per_shot, player_particle_shot_color):
         """
             Administra las acciones necesarias al disparar
@@ -309,7 +308,7 @@ class Bullet:
         """
             Renderiza la imagen de la bala en "surface"
         """ 
-        pygame.draw.circle(surface,  (100,100,100), self.position, self.size[0] if self.owner == "enemy" else self.size[1])
+        pygame.draw.circle(surface,  self.color, self.position, self.size[0] if self.owner == "enemy" else self.size[1])
 class Particle:
     """
         Clase creada para el mantenimiento de las particulas
@@ -485,14 +484,14 @@ def generateBackgroundRects():
     initial_position    =   [-100,500]
     size                =   [5000,100]
     capas               =   30
-    capas_spacediff     =   50
+    capas_spacediff     =   40
     rects               =   []
     scroll_proportion   =   0.1
     for i in range(1,capas+1):
         new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
         initial_position[0] -= capas_spacediff
         initial_position[1] -= capas_spacediff 
-        initial_color[1] += 5
+        initial_color[1] += 10
         initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)
