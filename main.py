@@ -38,14 +38,14 @@ PLAYER                                  =   engine.Player(
     animation_manager       = AnimationController(engine.animationDict(PLAYER_SIZE, None, "material/animations/", True),PLAYER_ANIMATION_FPS, "stand_1",False ), 
     size                    = PLAYER_SIZE,
     cadencia_de_arma        = 20,
-    attack_sound_path  = "material/efects/shots/cero.wav")
+    attack_sound_path  = "material/efects/shots/shot_set/2.wav")
 PARTICLES_PER_SHOT                      =   3
 
 BACKGROUND_COLOR                        =   ( 50, 50, 50)
 BACKGROUND_MUSIC                        =   pygame.mixer.music.load(ASSETS_PATH + "/efects/background/theme.wav")
 BULLETS_SIZE                            =   [10, 3]
 BULLETS_LIST                            =   []
-BULLETS_SPEED                           =   30
+BULLETS_SPEED                           =   20
 CELL_LIST                               =   []
 CLOCK                                   =   pygame.time.Clock()
 
@@ -79,11 +79,12 @@ ENEMY_GENERATION_TIMING                     =   10
 BULLET_FORCE                                =   20
 BULLET_ALCANCE                              =   100 # recordar que el alcance se define como la cantidad de iteraciones que dura la vida de la bala
 ENEMY_BULLET_LOWEST_SPEED                   =   2
-ENEMY_SHOOTING_TIMING_RANGE                 =   [10,20]
+ENEMY_SHOOTING_TIMING_RANGE                 =   [100,200]
 ENEMY_BULLET_SMOOTH                         =   100
 LIVE_ENEMY_RANGE                            =   [20,30]
 PLAYER_X_MOMENTUM_DECREASE                  =   2
 ENEMY_BULLETS_MOVE_CHANGE                   =   0.5
+PARTICLE_PLAYER_SHOT_COLOR                  =   [255,0,0]
 
 MAX_SURFACE_SIZE    =   [1600,800]
 PEND_ZOOM_MOVE  =   [0,0]
@@ -95,12 +96,12 @@ while not EXIT:
     PIV_SURFACE.fill(BACKGROUND_COLOR)
 
     #   ````````        update
-    PLAYER.updateShotsInfo(SCROLL, BULLETS_LIST, BULLETS_SPEED, BULLETS_SIZE, PARTICLES, PARTICLES_PER_SHOT)
+    PLAYER.updateShotsInfo(SCROLL, BULLETS_LIST, BULLETS_SPEED, BULLETS_SIZE, PARTICLES, PARTICLES_PER_SHOT, PARTICLE_PLAYER_SHOT_COLOR)
     PLAYER.updateState(GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER_X_MOMENTUM_DECREASE)
     engine.updateScroll(SCROLL,  PLAYER, PIV_SURFACE_SIZE, SCROLL_SMOOTH)
     engine.updateParticles(PARTICLES, CELL_LIST)
     engine.updateEnemys(ENEMY_LIST, GRAVITY, MAX_GRAVITY, CELL_LIST, PLAYER, BULLETS_LIST, ENEMY_GENERATION_TIMING, BULLETS_SIZE, SCROLL, BULLET_ALCANCE, ENEMY_BULLET_LOWEST_SPEED, ENEMY_SHOOTING_TIMING_RANGE, LIVE_ENEMY_RANGE, ENEMY_BULLET_SMOOTH)
-    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES, ENEMY_LIST, BULLET_FORCE, PLAYER, ENEMY_BULLETS_MOVE_CHANGE)
+    engine.updateBullets(BULLETS_LIST, CELL_LIST, PIV_SURFACE_SIZE, SCROLL, PARTICLES, ENEMY_LIST, BULLET_FORCE, PLAYER, ENEMY_BULLETS_MOVE_CHANGE, PARTICLE_PLAYER_SHOT_COLOR)
 
 
     #   ````````        render
