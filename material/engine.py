@@ -480,18 +480,18 @@ def generateBackgroundRects():
     """
         Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
     """
-    initial_color       =   {1:50,2:50,3:50}
+    initial_color       =   {1:30,2:30,3:30}
     initial_position    =   [-100,500]
     size                =   [5000,100]
     capas               =   30
-    capas_spacediff     =   40
+    capas_spacediff     =   50
     rects               =   []
     scroll_proportion   =   0.1
     for i in range(1,capas+1):
         new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
         initial_position[0] -= capas_spacediff
         initial_position[1] -= capas_spacediff 
-        initial_color[1] += 10
+        initial_color[1] += 5
         initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)

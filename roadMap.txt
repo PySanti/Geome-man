@@ -6,3 +6,4 @@
 - agregar efectos de sonido de colision con elementos del ambiente y con enemigos
 - implementar que los enemigos vuelen y se muevan por el aire
 - agregar dashes
+- mejorar tema musical

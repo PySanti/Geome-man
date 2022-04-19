@@ -11,9 +11,6 @@ ambiente:
     implementar objetos de ambiente
     implementar outlines
     Mejorar sprite de personaje y de balas
-    Arreglar imagen de las celdas (poner imagenes mas de tipo rambo)
-    perfeccionar wakes al saltar
-    agregar nubes
 
 otros:
     Revisar otros proyectos y hacerlos portables a Windows (probar)
