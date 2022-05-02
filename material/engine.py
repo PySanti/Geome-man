@@ -33,6 +33,15 @@ class Player:
         self.last_direction         =   "right"
         self.live                   =   100
         self.max_live               = self.live
+        self.horizontal_move_counter  =   [0,0]
+        self.current_horizontal_move_index = 0
+
+    def updateHorizontalMoveCounter(self):
+        if self.horizontal_move_counter[self.current_horizontal_move_index] == 0:
+            self.horizontal_move_counter[self.current_horizontal_move_index] = 1
+        else:
+            print(f"Conteo de intervalo entre toques : {self.horizontal_move_counter}")
+            self.horizontal_move_counter[self.current_horizontal_move_index] = 0
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -473,9 +482,6 @@ class Enemy:
 
 
 
-
-
-
 def generateBackgroundRects():
     """
         Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
@@ -532,10 +538,19 @@ def eventHandling(eventList, player,EXIT, jump_force, particles):
             EXIT = True
         if event.type == KEYDOWN  or event.type == KEYUP:
             if event.key == K_d:
+                if event.type == KEYDOWN:
+                    if player.current_horizontal_index != 1:
+                        player.horizontal_move_counter[0] = 0
+                    player.current_horizontal_move_index = 1
+                    player.updateHorizontalMoveCounter()
                 player.moving_right = (event.type == KEYDOWN)
             if event.key == K_a:
+                if event.type == KEYDOWN:
+                    if player.current_horizontal_index != 0:
+                        player.horizontal_move_counter[1] = 0
+                    player.current_horizontal_move_index = 0
+                    player.updateHorizontalMoveCounter()
                 player.moving_left = (event.type == KEYDOWN)
-
             if event.key == K_SEMICOLON:
                 player.attacking["right"] = (event.type == KEYDOWN)
             if event.key == K_k:

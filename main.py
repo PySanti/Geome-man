@@ -93,6 +93,9 @@ PEND_ZOOM_MOVE  =   [0,0]
 
 
 while not EXIT:
+    if PLAYER.horizontal_move_counter[PLAYER.current_horizontal_move_index] > 0:
+        PLAYER.horizontal_move_counter[PLAYER.current_horizontal_move_index] += 1
+
     PIV_SURFACE.fill(BACKGROUND_COLOR)
 
     #   ````````        update
