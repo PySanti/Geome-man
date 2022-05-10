@@ -35,13 +35,23 @@ class Player:
         self.max_live               = self.live
         self.horizontal_move_counter  =   [0,0]
         self.current_horizontal_move_index = 0
+        self.dashTimer              =   0
+    
+    def updateDashTimer(self, dashTimerLimit):
+        self.dashTimer += 1
+        if self.dashTimer >= dashTimerLimit:
+            self.dashTimer = dashTimerLimit
 
-    def updateHorizontalMoveCounter(self):
+    def startendHorizontalMoveCounter(self, dashTimerLimit):
         if self.horizontal_move_counter[self.current_horizontal_move_index] == 0:
             self.horizontal_move_counter[self.current_horizontal_move_index] = 1
         else:
-            print(f"Conteo de intervalo entre toques : {self.horizontal_move_counter}")
+            if (0 <= self.horizontal_move_counter[self.current_horizontal_move_index] <= 15) and (self.dashTimer == dashTimerLimit):
+                self.activateDash()
+            print(self.horizontal_move_counter[self.current_horizontal_move_index])
             self.horizontal_move_counter[self.current_horizontal_move_index] = 0
+    def activateDash(self):
+        print("Activando dash")
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -52,6 +62,26 @@ class Player:
         elif ((not self.moving()) or (not self.in_floor)) and (self.walking_sound_runing):
             self.steps_sound.fadeout(100)
             self.walking_sound_runing = False
+    def checkDashStatus(self, move_direction, dashTimerLimit):
+        # 0 ==  izquierda, 1 ==  derecha
+        if move_direction == "right":
+            if self.current_horizontal_move_index == 0:
+                self.horizontal_move_counter[0] = 0
+            self.current_horizontal_move_index = 1
+            self.startendHorizontalMoveCounter(dashTimerLimit)
+        elif move_direction == "left":
+            if self.current_horizontal_move_index == 1:
+                self.horizontal_move_counter[1] = 0
+            self.current_horizontal_move_index = 0
+            self.startendHorizontalMoveCounter(dashTimerLimit)
+        else:
+            print("Error ... ")
+    
+    def updateDashCounter(self):
+        if self.horizontal_move_counter[self.current_horizontal_move_index] > 0:
+            self.horizontal_move_counter[self.current_horizontal_move_index] += 1
+    
+
     def updateState(self, gravity, max_gravity, cell_list, x_momentum_decrease):
         """
             Actualiza la posicion del personaje llamando al metodo move, actualiza el momentum (para ello hace uso de los parametros "gravity" y "max_gravity" ).
@@ -147,7 +177,7 @@ class Player:
         if ("stand" in animation_manager.current_animation_name) and (not "attack" in animation_manager.current_animation_name) or (not (self.moving()) and (not (self.attacking["right"] or self.attacking["left"]))):
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) -1 )) :
                 if (animation_manager.current_animation_name == "stand_1") :
-                    random_ = randint(1,50)
+                    random_ = randint(1,5)
                     if  random_ in [2, 3]:
                         animation_manager.changeAnimation("stand_2" if random_ == 2 else "stand_3")
                         if random_ == 3:
@@ -524,7 +554,7 @@ def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enem
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
-def eventHandling(eventList, player,EXIT, jump_force, particles):
+def eventHandling(eventList, player,EXIT, jump_force, particles, dashTimerLimit):
     """
         Funcion creada para la recepcion de todos los eventos en el programa, encargada de llamar a las funciones necesarias relativas al evento en particular
 
@@ -539,17 +569,12 @@ def eventHandling(eventList, player,EXIT, jump_force, particles):
         if event.type == KEYDOWN  or event.type == KEYUP:
             if event.key == K_d:
                 if event.type == KEYDOWN:
-                    if player.current_horizontal_index != 1:
-                        player.horizontal_move_counter[0] = 0
-                    player.current_horizontal_move_index = 1
-                    player.updateHorizontalMoveCounter()
+                    # 0 ==  izquierda, 1 ==  derecha
+                    player.checkDashStatus("right", dashTimerLimit)
                 player.moving_right = (event.type == KEYDOWN)
             if event.key == K_a:
                 if event.type == KEYDOWN:
-                    if player.current_horizontal_index != 0:
-                        player.horizontal_move_counter[1] = 0
-                    player.current_horizontal_move_index = 0
-                    player.updateHorizontalMoveCounter()
+                    player.checkDashStatus("left", dashTimerLimit)
                 player.moving_left = (event.type == KEYDOWN)
             if event.key == K_SEMICOLON:
                 player.attacking["right"] = (event.type == KEYDOWN)
