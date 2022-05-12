@@ -57,6 +57,8 @@ GRAVITY                                 =   1
 
 MAX_GRAVITY                             =   10
 
+DASH_FORCE                              =   40
+
 
 TILE_SIZE                               =   [30, 20]
 
@@ -85,9 +87,9 @@ LIVE_ENEMY_RANGE                            =   [20,30]
 PLAYER_X_MOMENTUM_DECREASE                  =   2
 ENEMY_BULLETS_MOVE_CHANGE                   =   0.5
 PARTICLE_PLAYER_SHOT_COLOR                  =   [255,0,0]
-DASH_TIMER_LIMIT                            =   1000
-MAX_SURFACE_SIZE    =   [1600,800]
-PEND_ZOOM_MOVE  =   [0,0]
+DASH_TIMER_LIMIT                            =   200
+MAX_SURFACE_SIZE                            =   [1600,800]
+PEND_ZOOM_MOVE                              =   [0,0]
 
 
 
@@ -120,7 +122,8 @@ while not EXIT:
 
     #   ````````        event handling
     # recordar que tenemos que retornar tanto EXIT como LAST_MOUSE_POS por que al sustituir su valor, se crea una variable nueva, por lo tanto la referencia no es la misma
-    EXIT = engine.eventHandling(pygame.event.get(), PLAYER,EXIT, JUMP_FORCE, PARTICLES, DASH_TIMER_LIMIT)
+    EXIT = engine.eventHandling(pygame.event.get(), PLAYER,EXIT, JUMP_FORCE, PARTICLES, DASH_TIMER_LIMIT, DASH_FORCE)
+
     CLOCK.tick(60)
     pygame.display.update()
 

@@ -9,3 +9,7 @@
 - agregar timer a los dashes
 - arreglar error al inciar el juego (al seleccionar las celdas para generar el enemigo)
 - mejorar tema musical
+- arreglar error con dash que desestabiliza contador al moverse
+- arreglar error con dash cuando se mete dentro del mapa
+- implementar barra de dashTimer
+- agregar borde a la barra de vida y de dash del personaje

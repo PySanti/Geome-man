@@ -36,22 +36,52 @@ class Player:
         self.horizontal_move_counter  =   [0,0]
         self.current_horizontal_move_index = 0
         self.dashTimer              =   0
-    
+        self.dashIterationLimit     = 20
     def updateDashTimer(self, dashTimerLimit):
         self.dashTimer += 1
         if self.dashTimer >= dashTimerLimit:
             self.dashTimer = dashTimerLimit
+    def startendHorizontalMoveCounter(self, dashTimerLimit, particles, dash_force):
+        """
+            Funcion principal en la administraacion del dash_counter
 
-    def startendHorizontalMoveCounter(self, dashTimerLimit):
+            Cuando se mueve hacia la derecha se llama a checkStatus() quien modifica el valor player.current_horizontal_move_index y en caso 
+            de que el player.current_horizontal_move_index sea diferente de la direccion a la que se esta moviendo (0 == izquierda, 1 == derecha), checkDashStatus() 
+            resetea el conteo del horizontal_move_counter[] y lo mismo para el caso contrario. Por otro lado, startendHorizontalMoveCounter() comienza el conteo en caso de 
+            que el indice sea diferente de 0.
+
+            Por otro lado, updateDashCounter aumenta el valor del contador para la direccion actual en caso de que el valor del contador sea diferente 0. Despues, cuando se 
+            pulse por segunda vez el boton de la direccion actual, se comprueba si el contador esta en un rango de 0 a 15 iteraciones y si el dashTimer es igual a limite 
+        """
         if self.horizontal_move_counter[self.current_horizontal_move_index] == 0:
             self.horizontal_move_counter[self.current_horizontal_move_index] = 1
         else:
-            if (0 <= self.horizontal_move_counter[self.current_horizontal_move_index] <= 15) and (self.dashTimer == dashTimerLimit):
-                self.activateDash()
-            print(self.horizontal_move_counter[self.current_horizontal_move_index])
+            if (0 <= self.horizontal_move_counter[self.current_horizontal_move_index] <= self.dashIterationLimit) and (self.dashTimer == dashTimerLimit):
+                self.activateDash(particles, dash_force)
+                self.dashTimer = 0
             self.horizontal_move_counter[self.current_horizontal_move_index] = 0
-    def activateDash(self):
-        print("Activando dash")
+    def activateDash(self, particles, dash_force):
+        dash_direction = "right" if self.current_horizontal_move_index == 1 else "left"
+        self.x_momentum += dash_force if dash_direction == "right" else -dash_force
+
+        initial_particle_pos = [self.rect.centerx, self.rect.centery]
+        initial_size = 5
+        initial_move_change = -0.1
+        for i in range(10):
+            particles.append(Particle(initial_particle_pos, initial_size, [100,100,100], [randint(-5, -1), randint(-20,20)/5], 0.1, [0,0], [0,0,0], False))
+            initial_particle_pos[0] -= 10 if dash_direction == "right" else -10
+            initial_move_change -= 0.05
+
+
+#        initial_particle_pos = [self.rect.x, self.rect.y]
+#        initial_size = 10
+#        for i in range(10):
+#            initial_particle_pos[0] -= randint(-1,1)
+#            initial_particle_pos[1] -= randint(-1,1)
+#            particles.append(Particle(initial_particle_pos, initial_size, [100,100,100], [randint(-5, -1), randint(-1,1)], 0.1, [randint(-1,1),randint(-1,1)], [0,0,0], True))
+
+
+
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -62,25 +92,25 @@ class Player:
         elif ((not self.moving()) or (not self.in_floor)) and (self.walking_sound_runing):
             self.steps_sound.fadeout(100)
             self.walking_sound_runing = False
-    def checkDashStatus(self, move_direction, dashTimerLimit):
+    def checkDashStatus(self, move_direction, dashTimerLimit, particles, dash_force):
         # 0 ==  izquierda, 1 ==  derecha
         if move_direction == "right":
             if self.current_horizontal_move_index == 0:
                 self.horizontal_move_counter[0] = 0
             self.current_horizontal_move_index = 1
-            self.startendHorizontalMoveCounter(dashTimerLimit)
+            self.startendHorizontalMoveCounter(dashTimerLimit, particles, dash_force)
         elif move_direction == "left":
             if self.current_horizontal_move_index == 1:
                 self.horizontal_move_counter[1] = 0
             self.current_horizontal_move_index = 0
-            self.startendHorizontalMoveCounter(dashTimerLimit)
+            self.startendHorizontalMoveCounter(dashTimerLimit, particles, dash_force)
         else:
             print("Error ... ")
-    
     def updateDashCounter(self):
         if self.horizontal_move_counter[self.current_horizontal_move_index] > 0:
             self.horizontal_move_counter[self.current_horizontal_move_index] += 1
-    
+            if  self.horizontal_move_counter[self.current_horizontal_move_index] >= self.dashIterationLimit:
+                self.horizontal_move_counter[self.current_horizontal_move_index] = 0
 
     def updateState(self, gravity, max_gravity, cell_list, x_momentum_decrease):
         """
@@ -306,7 +336,10 @@ class Player:
         if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
         surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1]])
-        self.renderLiveBar(surface, scroll)
+        self.renderLiveBar(surface, scroll, 3)
+        energy_bar_piece = ((3*self.dashTimer) / self.live)
+        print(energy_bar_piece)
+        self.renderEnergyBar(surface, scroll, self.dashTimer/energy_bar_piece)
     def updateLastDirection(self):
         """
             Actualiza el atributo "last_direction" dependiendo de las condiciones
@@ -315,13 +348,21 @@ class Player:
             self.last_direction = "left"
         if (self.moving_right and self.attacking["right"]) or (self.attacking["right"] and self.moving_left) or (self.moving_right and (not self.attacking["left"])) or (self.attacking["right"] and (not self.moving_left)):
             self.last_direction = "right"
-    def renderLiveBar(self, surface, scroll):
-        live_piece  =   3
+    def renderLiveBar(self, surface, scroll, live_bar_piece):
         live_color = generateLiveColor(self.max_live, self.live)
         if self.last_direction == "right":
-            pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+            pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
         else:
-            pygame.draw.rect(surface, live_color, [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_piece, 3])
+            pygame.draw.rect(surface, live_color, [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
+        
+    def renderEnergyBar(self, surface, scroll, live_bar_piece):
+        energy_piece  =   3
+        bar_color = [255,255,255]
+        if self.last_direction == "right":
+            pygame.draw.rect(surface, bar_color, [self.rect.x + 15   - scroll[0], self.rect.y - 7 - scroll[1], self.dashTimer/energy_piece, 3])
+        else:
+            pygame.draw.rect(surface, bar_color, [self.rect.x + 30   - scroll[0], self.rect.y - 7 - scroll[1], self.dashTimer/energy_piece, 3])
+
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
@@ -554,7 +595,7 @@ def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enem
 def renderBullets(bullets_list, surface):
     for bullet in bullets_list:
         bullet.render(surface)
-def eventHandling(eventList, player,EXIT, jump_force, particles, dashTimerLimit):
+def eventHandling(eventList, player,EXIT, jump_force, particles, dashTimerLimit, dash_force):
     """
         Funcion creada para la recepcion de todos los eventos en el programa, encargada de llamar a las funciones necesarias relativas al evento en particular
 
@@ -570,11 +611,11 @@ def eventHandling(eventList, player,EXIT, jump_force, particles, dashTimerLimit)
             if event.key == K_d:
                 if event.type == KEYDOWN:
                     # 0 ==  izquierda, 1 ==  derecha
-                    player.checkDashStatus("right", dashTimerLimit)
+                    player.checkDashStatus("right", dashTimerLimit, particles, dash_force)
                 player.moving_right = (event.type == KEYDOWN)
             if event.key == K_a:
                 if event.type == KEYDOWN:
-                    player.checkDashStatus("left", dashTimerLimit)
+                    player.checkDashStatus("left", dashTimerLimit, particles, dash_force)
                 player.moving_left = (event.type == KEYDOWN)
             if event.key == K_SEMICOLON:
                 player.attacking["right"] = (event.type == KEYDOWN)
