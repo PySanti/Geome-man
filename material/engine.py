@@ -66,22 +66,9 @@ class Player:
 
         initial_particle_pos = [self.rect.centerx, self.rect.centery]
         initial_size = 5
-        initial_move_change = -0.1
         for i in range(10):
             particles.append(Particle(initial_particle_pos, initial_size, [100,100,100], [randint(-5, -1), randint(-20,20)/5], 0.1, [0,0], [0,0,0], False))
             initial_particle_pos[0] -= 10 if dash_direction == "right" else -10
-            initial_move_change -= 0.05
-
-
-#        initial_particle_pos = [self.rect.x, self.rect.y]
-#        initial_size = 10
-#        for i in range(10):
-#            initial_particle_pos[0] -= randint(-1,1)
-#            initial_particle_pos[1] -= randint(-1,1)
-#            particles.append(Particle(initial_particle_pos, initial_size, [100,100,100], [randint(-5, -1), randint(-1,1)], 0.1, [randint(-1,1),randint(-1,1)], [0,0,0], True))
-
-
-
     def updateSounds(self):
         """
             Actualiza los sonidos que esten corriendo en el momento
@@ -111,7 +98,6 @@ class Player:
             self.horizontal_move_counter[self.current_horizontal_move_index] += 1
             if  self.horizontal_move_counter[self.current_horizontal_move_index] >= self.dashIterationLimit:
                 self.horizontal_move_counter[self.current_horizontal_move_index] = 0
-
     def updateState(self, gravity, max_gravity, cell_list, x_momentum_decrease):
         """
             Actualiza la posicion del personaje llamando al metodo move, actualiza el momentum (para ello hace uso de los parametros "gravity" y "max_gravity" ).
@@ -327,7 +313,7 @@ class Player:
             elif self.jump_count == 1:
                 self.y_momentum = jump_force*2
                 self.jump_count += 1
-    def render(self, surface, scroll):
+    def render(self, surface, scroll, dashTimerLimit):
         """
             Renderiza al personaje
         """
@@ -336,9 +322,10 @@ class Player:
         if self.last_direction == "left":
             current_sprite = pygame.transform.flip(current_sprite, True, False)
         surface.blit(current_sprite, [ self.rect.x - scroll[0], self.rect.y - scroll[1]])
-        self.renderLiveBar(surface, scroll, 3)
-        energy_bar_piece = ((3*self.dashTimer) / self.live)
-        print(energy_bar_piece)
+
+        live_bar_piece = 3
+        self.renderLiveBar(surface, scroll, live_bar_piece)
+        energy_bar_piece = (dashTimerLimit/self.max_live)*live_bar_piece
         self.renderEnergyBar(surface, scroll, self.dashTimer/energy_bar_piece)
     def updateLastDirection(self):
         """
@@ -354,15 +341,12 @@ class Player:
             pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
         else:
             pygame.draw.rect(surface, live_color, [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
-        
-    def renderEnergyBar(self, surface, scroll, live_bar_piece):
-        energy_piece  =   3
+    def renderEnergyBar(self, surface, scroll, energy_bar_len):
         bar_color = [255,255,255]
         if self.last_direction == "right":
-            pygame.draw.rect(surface, bar_color, [self.rect.x + 15   - scroll[0], self.rect.y - 7 - scroll[1], self.dashTimer/energy_piece, 3])
+            pygame.draw.rect(surface, bar_color, [self.rect.x + 15   - scroll[0], self.rect.y - 7 - scroll[1], energy_bar_len, 3])
         else:
-            pygame.draw.rect(surface, bar_color, [self.rect.x + 30   - scroll[0], self.rect.y - 7 - scroll[1], self.dashTimer/energy_piece, 3])
-
+            pygame.draw.rect(surface, bar_color, [self.rect.x + 30   - scroll[0], self.rect.y - 7 - scroll[1], energy_bar_len, 3])
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas

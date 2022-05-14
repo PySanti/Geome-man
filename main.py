@@ -1,4 +1,3 @@
-from random import randint
 from ideas import AnimationController
 import pygame
 from pygame.locals import *
@@ -112,7 +111,7 @@ while not EXIT:
 
     #   ````````        render
     engine.renderBackgroundRects(BACKGROUND_RECTS, PIV_SURFACE, SCROLL)
-    PLAYER.render(PIV_SURFACE, SCROLL)
+    PLAYER.render(PIV_SURFACE, SCROLL, DASH_TIMER_LIMIT)
     engine.printMap(TILE_SIZE, CELL_LIST, CELL_COLOR_CHANGE, PIV_SURFACE, GAME_MAP, SCROLL, SPACE_CHAR, [PLAYER.rect.x, PLAYER.rect.y])
     engine.renderParticles(PARTICLES, PIV_SURFACE, SCROLL)
     engine.renderBullets(BULLETS_LIST, PIV_SURFACE)
