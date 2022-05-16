@@ -194,10 +194,10 @@ class Player:
         if ("stand" in animation_manager.current_animation_name) and (not "attack" in animation_manager.current_animation_name) or (not (self.moving()) and (not (self.attacking["right"] or self.attacking["left"]))):
             if (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) -1 )) :
                 if (animation_manager.current_animation_name == "stand_1") :
-                    random_ = randint(1,5)
-                    if  random_ in [2, 3]:
-                        animation_manager.changeAnimation("stand_2" if random_ == 2 else "stand_3")
-                        if random_ == 3:
+                    random_ = randint(1,10)
+                    if  random_ in range(5,11):
+                        animation_manager.changeAnimation("stand_3" if random_ == 5 else "stand_2")
+                        if random_ == 5:
                             self.look_back_couter += 1
                             self.look_back_max_counter = randint(1,5)
                 elif self.look_back_couter > 0:

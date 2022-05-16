@@ -74,7 +74,6 @@ pygame.mouse.set_visible(False)
 #   recordar que la lista de rectangulos de fondo contiene "microlistas" que almacenan las capas de las columnas
 #           proporcion de scroll, color, rect
 BACKGROUND_RECTS, BACKGROUND_COLOR        =   engine.generateBackgroundRects()
-print(BACKGROUND_COLOR)
 PARTICLES                                   =   []
 ENEMY_LIST                                  =   []
 ENEMY_GENERATION_TIMING                     =   10
