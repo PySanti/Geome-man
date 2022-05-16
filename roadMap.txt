@@ -5,6 +5,5 @@
 - perfeccionar animacion de personaje
 - agregar efectos de sonido de colision con elementos del ambiente y con enemigos
 - implementar que los enemigos vuelen y se muevan por el aire
-- arreglar error al inciar el juego (al seleccionar las celdas para generar el enemigo)
 - mejorar tema musical
 - arreglar error con dash cuando se mete dentro del mapa

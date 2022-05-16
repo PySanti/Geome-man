@@ -748,7 +748,7 @@ def updateEnemys(enemy_list, gravity, max_gravity, cell_list, player, bullet_lis
         enemy.update(gravity, max_gravity, cell_list, player, bullet_list, bullet_size, scroll, bullet_alcance, bullet_lowest_speed, bullet_smooth)
 
 
-    if (randint(1,generation_timing) == 1) and (len(enemy_list)  == 0):
+    if (randint(1,generation_timing) == 1) and (len(enemy_list)  == 0) and (len(cell_list) > 0):
         size                = [randint(30,40),randint(50,70)]
         initial_position    = [choice(cell_list).x, 0]
         attack_timing       = randint(enemy_shooting_timing_range[0], enemy_shooting_timing_range[1])
