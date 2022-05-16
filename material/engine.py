@@ -38,6 +38,7 @@ class Player:
         self.current_horizontal_move_index = 0
         self.dashTimer              =   0
         self.dashIterationLimit     = 20
+        self.score                  = 0
     def updateDashTimer(self, dashTimerLimit):
         self.dashTimer += 1
         if self.dashTimer >= dashTimerLimit:
@@ -574,7 +575,7 @@ def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enem
             bullet.updatePosition()
             bullet_real_rect = pygame.Rect([bullet.position[0] + scroll[0], bullet.position[1] + scroll[1], bullet.size[0], bullet.size[1]])
             if bullet.owner == "player":
-                checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll, player_particle_shot_color)
+                checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll, player_particle_shot_color, player)
             elif bullet.owner == "enemy":
                 updateEnemyBulletsMoveChange(bullet, bullet_move_change)
                 checkEnemyBullets(bullet, scroll, particles, player, bullets_list, bullet_real_rect)
@@ -755,7 +756,7 @@ def updateEnemys(enemy_list, gravity, max_gravity, cell_list, player, bullet_lis
         initial_position    = [choice(cell_list).x, 0]
         attack_timing       = randint(enemy_shooting_timing_range[0], enemy_shooting_timing_range[1])
         color               = (100,100,100)
-        live                =   randint(live_enemy_range[0], live_enemy_range[1])
+        live                =   randint(live_enemy_range[0], live_enemy_range[1]) if player.score == 0 else player.score/5
         enemy_list.append(Enemy(initial_position, attack_timing , size, color, live))
 def bulletEnemySpeed(player_pos, enemy_pos, bullet_smooth):
     """
@@ -770,13 +771,13 @@ def makePlayerShotCellColision(cell_colisions, last_bullet_pos, particles, parti
         particle_initial_pos    =  [colied_tile.right if last_bullet_pos[0] > colied_tile.right else colied_tile.left, last_bullet_pos[1]]
         new_particle            = Particle(position= particle_initial_pos,size=3,color = particle_colision_color.copy(), move=[randint(-2,2), randint(-1,1)].copy(), size_change=0.1, move_change=[0,0.1], color_change=[0,1,0], is_colider=False)
         particles.append(new_particle)
-def checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll, player_particle_shot_color):
+def checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bullet_pos, particles, bullet_power, enemy_list, scroll, player_particle_shot_color, player):
     cell_colisions = colisionTest(bullet_real_rect, cell_list)
     if len(cell_colisions) > 0:
         bullets_list.remove(bullet)
         makePlayerShotCellColision(cell_colisions, last_bullet_pos, particles, player_particle_shot_color)
     else:
-        if not (checkPlayerShotEnemyColision(enemy_list, bullet_real_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet)):
+        if not (checkPlayerShotEnemyColision(enemy_list, bullet_real_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet, player)):
             bullet.position[1] += randint(-5,5)
             for i in range(1,4):
                 particle_initial_pos    = [bullet.position[0] + scroll[0], bullet.position[1] + scroll[1]].copy()
@@ -785,7 +786,7 @@ def checkPlayerBullet(bullet_real_rect, cell_list, bullets_list, bullet, last_bu
                 particle_move[1] = randint(-1,0)
                 new_particle            = Particle(particle_initial_pos,size=2, color=player_particle_shot_color.copy(), move=particle_move.copy(), size_change=0.05, move_change=[0,0.1], color_change=[0,1,0], is_colider=True)
                 particles.append(new_particle)
-def checkPlayerShotEnemyColision(enemy_list, bullet_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet):
+def checkPlayerShotEnemyColision(enemy_list, bullet_rect, bullets_list, bullet_power, last_bullet_pos, particles, bullet, player):
     enemy_rect_list = [enemy.rect for enemy in enemy_list]
     enemys_colisions = colisionTest(bullet_rect, enemy_rect_list)
     if len(enemys_colisions) > 0:
@@ -800,6 +801,7 @@ def checkPlayerShotEnemyColision(enemy_list, bullet_rect, bullets_list, bullet_p
                 particles.append(new_particle)
         else:
             enemy_list.remove(colied_enemy)
+            player.score += 100
             for i in range(1,10):
                 particle_initial_pos    = [colied_enemy.rect.x + colied_enemy.width//2 , colied_enemy.rect.y + colied_enemy.height//2 ].copy()
                 particle_move           =   [bullet.move[0]//6 + randint(-3,3), bullet.move[1]//6 + randint(-3,3)]
