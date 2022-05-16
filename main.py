@@ -40,7 +40,7 @@ PLAYER                                  =   engine.Player(
     attack_sound_path  = "material/efects/shots/shot_set/2.wav")
 PARTICLES_PER_SHOT                      =   3
 
-BACKGROUND_COLOR                        =   ( 50, 50, 50)
+BACKGROUND_COLOR                        =   (0,0,0)
 BACKGROUND_MUSIC                        =   pygame.mixer.music.load(ASSETS_PATH + "/efects/background/theme.wav")
 BULLETS_SIZE                            =   [10, 3]
 BULLETS_LIST                            =   []
@@ -73,7 +73,8 @@ pygame.mouse.set_visible(False)
 
 #   recordar que la lista de rectangulos de fondo contiene "microlistas" que almacenan las capas de las columnas
 #           proporcion de scroll, color, rect
-BACKGROUND_RECTS        =   engine.generateBackgroundRects()
+BACKGROUND_RECTS, BACKGROUND_COLOR        =   engine.generateBackgroundRects()
+print(BACKGROUND_COLOR)
 PARTICLES                                   =   []
 ENEMY_LIST                                  =   []
 ENEMY_GENERATION_TIMING                     =   10

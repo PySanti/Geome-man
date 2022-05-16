@@ -1,3 +1,4 @@
+from typing import final
 import pygame
 from pygame.locals import *
 import os
@@ -544,20 +545,21 @@ def generateBackgroundRects():
     initial_color       =   {1:30,2:30,3:30}
     initial_position    =   [-100,500]
     size                =   [5000,100]
-    capas               =   30
-    capas_spacediff     =   50
+    capas               =   500
+    capas_spacediff     =   15  
     rects               =   []
-    scroll_proportion   =   0.1
+    scroll_proportion   =   0.3
+    final_color = [i[1] for i in initial_color.items()]
     for i in range(1,capas+1):
         new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
         initial_position[0] -= capas_spacediff
         initial_position[1] -= capas_spacediff 
-        initial_color[1] += 5
+        initial_color[1] += 3
         initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)
 
-    return rects
+    return rects, final_color
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change, player_particle_shot_color):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
