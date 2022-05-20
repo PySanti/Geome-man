@@ -26,10 +26,9 @@ JUMP_FORCE                              =   -15
 
 
 PIV_SURFACE_SIZE                        =   [800, 400]
-PLAYER_ANIMATIONS_FRAMES_PER_IMAGE      =   7
 PIV_SURFACE                             =   pygame.Surface(PIV_SURFACE_SIZE)
-PLAYER_SIZE                             =   [80,70]
-PLAYER_ANIMATION_FPS                    =   4
+PLAYER_SIZE                             =   [60,70]
+PLAYER_ANIMATION_FPS                    =   7
 PLAYER                                  =   engine.Player( 
     steps_sound             = STEPS_SOUND, 
     player_speed            = SPEED,
