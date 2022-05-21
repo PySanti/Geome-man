@@ -10,3 +10,4 @@
 - arreglar error de lag al disparar muchas balas
 - arreglar error de posicion de la barra de vida
 - arrglar detalles de las animaciones
+- agregar particulas cuando la barra de energia este cargada

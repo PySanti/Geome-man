@@ -39,6 +39,7 @@ class Player:
         self.dashTimer              =   0
         self.dashIterationLimit     = 20
         self.score                  = 0
+        self.energy_bar_particle_generation_timer = 0
     def updateDashTimer(self, dashTimerLimit):
         self.dashTimer += 1
         if self.dashTimer >= dashTimerLimit:
@@ -69,7 +70,7 @@ class Player:
         initial_particle_pos = [self.rect.centerx, self.rect.centery]
         initial_size = 5
         for i in range(10):
-            particles.append(Particle(initial_particle_pos, initial_size, [100,100,100], [randint(-5, -1), randint(-20,20)/5], 0.1, [0,0], [0,0,0], False))
+            particles.append(Particle(initial_particle_pos, initial_size, [255,255,255], [randint(-5, -1), randint(-20,20)/5], 0.1, [0,0], [0,0,0], False))
             initial_particle_pos[0] -= 10 if dash_direction == "right" else -10
     def updateSounds(self):
         """
@@ -237,8 +238,10 @@ class Player:
             if self.y_momentum < 0:
                 if animation_manager.current_animation_name != "jump_momentum_negativo":
                     animation_manager.changeAnimation("jump_momentum_negativo")
-                elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1)):
-                    animation_manager.current_animation_frame = 0
+                elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list))):
+                    pass
+                else:
+                    pass
             else:
                 if animation_manager.current_animation_name != "jump_momentum_positivo":
                     animation_manager.changeAnimation("jump_momentum_positivo")
@@ -882,3 +885,11 @@ def generateLiveColor(max_live, current_live):
     else:
         live_color = (255,0,0)
     return live_color
+def generateEnergyChargeParticles(player, particles, dash_timer_limit, energybar_particle_generation_timer, energybar_particle_generation_timer_LIMIT ):
+    move_speed  =   5
+    if (player.dashTimer == dash_timer_limit):
+        if player.energy_bar_particle_generation_timer == energybar_particle_generation_timer_LIMIT:
+            player.energy_bar_particle_generation_timer = 0
+            particles.append(Particle([player.rect.centerx , player.rect.centery], 3, [200,200,200],[randint(-move_speed,move_speed)/5, randint(-move_speed, move_speed)/10], 0.02,[randint(-2,2)/50,randint(-2,2)/50], [1,1,1], False  ))
+        else:
+            player.energy_bar_particle_generation_timer += 1
