@@ -1,13 +1,10 @@
+- arreglar error en animaciones al bajar por escalones (usar un minimo de momentum para considerar que esta en el aire)
+- quitar sonido de pasos y salto
+- arreglar error de posicion de la barra de vida
+- arreglar error de lag al disparar muchas balas
+- arreglar error con dash cuando se mete dentro del mapa
 - modificar sonido de disparo, agregar vvariaciones y un sonido base mas apropiado
-- modificar disenio de personaje
 - implementar sonidos de disparo de enemigo, generacion de enemigo, muerte de enemigo, explosion de bala de enemigo, sonido de hit al personaje
 - arreglar problemas de sincrionizacion en la animacion
-- perfeccionar animacion de personaje
 - agregar efectos de sonido de colision con elementos del ambiente y con enemigos
 - implementar que los enemigos vuelen y se muevan por el aire
-- mejorar tema musical
-- arreglar error con dash cuando se mete dentro del mapa
-- arreglar error de lag al disparar muchas balas
-- arreglar error de posicion de la barra de vida
-- arrglar detalles de las animaciones
-- mejorar animaciones
