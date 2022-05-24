@@ -100,7 +100,7 @@ class Player:
             player_movement[0] += self.speed
         elif self.moving_left:
             player_movement[0] -= self.speed
-        
+
         if self.x_momentum < 0:
             self.x_momentum += x_momentum_decrease 
         elif self.x_momentum > 0:
@@ -566,11 +566,23 @@ def generateBackgroundRects():
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)
 
-
-    new_rect = BackgroundRect([0,100,0], pygame.Rect([500,100,100,10000]),0.7)
-    new_rect2 = BackgroundRect([100,0,100], pygame.Rect([400,100,500,10000]),0.5)
-    rects.append(new_rect2)
-    rects.append(new_rect)
+    initial_position  = [200,0]
+    space_diff  =   [50,50]
+    size        = [100,100]
+    scroll_proportion  = 0.1
+    initial_color       =   {1:30,2:30,3:30}
+    for a in range(10):
+        for i in range(10):
+            new_rect = BackgroundRect([i[1] for i in initial_color.items()], pygame.Rect([initial_position[0],initial_position[1],size[0],size[1]]),scroll_proportion)
+            rects.append(new_rect)
+            scroll_proportion += 0.1
+            initial_color[1] += 20 if a%2 == 0 else -20
+            initial_position[0] += space_diff[0]
+            initial_position[1] += space_diff[1]
+        space_diff  =   [50,50]
+        size        = [100,100]
+        scroll_proportion  = 0.1
+        initial_color       =   {1:30,2:30,3:30}
     return rects, final_color
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change, player_particle_shot_color):
     """
