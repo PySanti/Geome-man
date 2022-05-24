@@ -19,10 +19,8 @@ class Player:
         self.moving_left            =   False
         self.in_floor               =   False
         self.jump_count             =   0
-        self.walking_sound_runing   =   False
         self.shot_sound_runing      =   False
         self.attacking              =   {"left" : False, "right" : False}
-        self.steps_sound            =   steps_sound
         self.speed                  =   player_speed
         self.jump_sound             =   jump_sound
         self.animation_manager      =   animation_manager
@@ -72,16 +70,6 @@ class Player:
         for i in range(10):
             particles.append(Particle(initial_particle_pos, initial_size, [255,255,255], [randint(-5, -1), randint(-20,20)/5], 0.1, [0,0], [0,0,0], False))
             initial_particle_pos[0] -= 10 if dash_direction == "right" else -10
-    def updateSounds(self):
-        """
-            Actualiza los sonidos que esten corriendo en el momento
-        """
-        if (self.moving()) and (self.in_floor) and (not self.walking_sound_runing):
-            self.walking_sound_runing = True
-            self.steps_sound.play(-1)
-        elif ((not self.moving()) or (not self.in_floor)) and (self.walking_sound_runing):
-            self.steps_sound.fadeout(100)
-            self.walking_sound_runing = False
     def checkDashStatus(self, move_direction, dashTimerLimit, particles, dash_force):
         # 0 ==  izquierda, 1 ==  derecha
         if move_direction == "right":
@@ -140,7 +128,6 @@ class Player:
         # actualizacion de sonidos y animaciones
         self.animationCheck()
         self.animation_manager.updateAnimation()
-        self.updateSounds()
         self.updateLastDirection()
     def generateAttackSound(self, volume, fadeout):
         """
@@ -234,23 +221,19 @@ class Player:
             animation_manager.changeAnimation("run")
         elif ((not self.moving()) and (not (self.attacking["right"] or self.attacking["left"])) and ("stand" not in animation_manager.current_animation_name )) and (self.in_floor):
             animation_manager.changeAnimation("stand_1")
-        if (not self.in_floor) and ("attack" not in animation_manager.current_animation_name):
+        if (abs(self.y_momentum) > 3) and ("attack" not in animation_manager.current_animation_name):
             if self.y_momentum < 0:
                 if animation_manager.current_animation_name != "jump_momentum_negativo":
                     animation_manager.changeAnimation("jump_momentum_negativo")
-                elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list))):
-                    pass
-                else:
-                    pass
+                elif (animation_manager.current_animation_index == ((len(animation_manager.current_animation_list)) - 2)):
+                    animation_manager.current_animation_frame = 0
             else:
                 if animation_manager.current_animation_name != "jump_momentum_positivo":
                     animation_manager.changeAnimation("jump_momentum_positivo")
-                elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 1)):
+                elif (animation_manager.current_animation_index == (len(animation_manager.current_animation_list) - 2)):
                     animation_manager.current_animation_frame = 0
         if ((self.attacking["right"] or self.attacking["left"]) and (self.amoo > 0)) and (not (self.moving())):
             if animation_manager.current_animation_name != "attacking_stand":
-                animation_manager.changeAnimation("attacking_stand")
-            elif animation_manager.current_animation_index == 3 and (self.attacking["right"] or self.attacking["left"]):
                 animation_manager.changeAnimation("attacking_stand")
             elif ( animation_manager.current_animation_name == "attacking_stand") and (not (self.attacking["right"] or self.attacking["left"])):
                 animation_manager.changeAnimation("stand_1")
@@ -365,13 +348,13 @@ class Player:
         if self.last_direction == "right":
             pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
         else:
-            pygame.draw.rect(surface, live_color, [self.rect.x + 30   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
+            pygame.draw.rect(surface, live_color, [self.rect.x + 15   - scroll[0], self.rect.y - 3 - scroll[1], self.live/live_bar_piece, 3])
     def renderEnergyBar(self, surface, scroll, energy_bar_len):
         bar_color = [255,255,255]
         if self.last_direction == "right":
             pygame.draw.rect(surface, bar_color, [self.rect.x + 15   - scroll[0], self.rect.y - 7 - scroll[1], energy_bar_len, 3])
         else:
-            pygame.draw.rect(surface, bar_color, [self.rect.x + 30   - scroll[0], self.rect.y - 7 - scroll[1], energy_bar_len, 3])
+            pygame.draw.rect(surface, bar_color, [self.rect.x + 15   - scroll[0], self.rect.y - 7 - scroll[1], energy_bar_len, 3])
 class Bullet:
     """
         Clase creada para el mantenimiento de las posiciones de las balas
@@ -568,7 +551,7 @@ def generateBackgroundRects():
     """
     initial_color       =   {1:30,2:30,3:30}
     initial_position    =   [-100,500]
-    size                =   [5000,100]
+    size                =   [5000,200]
     capas               =   500
     capas_spacediff     =   15  
     rects               =   []
@@ -583,6 +566,11 @@ def generateBackgroundRects():
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)
 
+
+    new_rect = BackgroundRect([0,100,0], pygame.Rect([500,100,100,10000]),0.7)
+    new_rect2 = BackgroundRect([100,0,100], pygame.Rect([400,100,500,10000]),0.5)
+    rects.append(new_rect2)
+    rects.append(new_rect)
     return rects, final_color
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change, player_particle_shot_color):
     """

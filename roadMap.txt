@@ -1,8 +1,9 @@
-- arreglar error en animaciones al bajar por escalones (usar un minimo de momentum para considerar que esta en el aire)
-- quitar sonido de pasos y salto
-- arreglar error de posicion de la barra de vida
+- agregar sonido de dash
+- agregar rectangulos de fondo
+
 - arreglar error de lag al disparar muchas balas
 - arreglar error con dash cuando se mete dentro del mapa
+
 - modificar sonido de disparo, agregar vvariaciones y un sonido base mas apropiado
 - implementar sonidos de disparo de enemigo, generacion de enemigo, muerte de enemigo, explosion de bala de enemigo, sonido de hit al personaje
 - arreglar problemas de sincrionizacion en la animacion
