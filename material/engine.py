@@ -566,21 +566,22 @@ def generateBackgroundRects():
 #        scroll_proportion += (0.9/capas)
         rects.append(new_rect)
 
-    initial_position  = [200,0]
-    space_diff  =   [50,50]
-    size        = [100,100]
+    initial_position  = [200,100]
+    space_diff  =   [150,-20]
+    size        = [1000,1000]
     scroll_proportion  = 0.1
     initial_color       =   {1:30,2:30,3:30}
-    for a in range(10):
-        for i in range(10):
+    capas = 10
+
+    for i in range(2):
+        for a in range(capas):
             new_rect = BackgroundRect([i[1] for i in initial_color.items()], pygame.Rect([initial_position[0],initial_position[1],size[0],size[1]]),scroll_proportion)
             rects.append(new_rect)
-            scroll_proportion += 0.1
-            initial_color[1] += 20 if a%2 == 0 else -20
+            scroll_proportion += 0.9/capas
+            initial_color[1] += 225/capas
             initial_position[0] += space_diff[0]
             initial_position[1] += space_diff[1]
-        space_diff  =   [50,50]
-        size        = [100,100]
+        print(f"-> {initial_position}")
         scroll_proportion  = 0.1
         initial_color       =   {1:30,2:30,3:30}
     return rects, final_color
