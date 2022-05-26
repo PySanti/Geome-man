@@ -1,5 +1,6 @@
 from typing import final
 import pygame
+from pygame.draw import rect
 from pygame.locals import *
 import os
 from random import choice, randint
@@ -549,42 +550,69 @@ def generateBackgroundRects():
     """
         Funcion diseniada para crear los rectangulos del fondo. Rectorna la lista de rectangulos y la posicion media de toda la decoracion
     """
-    initial_color       =   {1:30,2:30,3:30}
-    initial_position    =   [-100,500]
-    size                =   [5000,200]
-    capas               =   500
-    capas_spacediff     =   15  
-    rects               =   []
-    scroll_proportion   =   0.3
-    final_color = [i[1] for i in initial_color.items()]
-    for i in range(1,capas+1):
-        new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
-        initial_position[0] -= capas_spacediff
-        initial_position[1] -= capas_spacediff 
-        initial_color[1] += 3
-        initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
-#        scroll_proportion += (0.9/capas)
-        rects.append(new_rect)
-
-    initial_position  = [200,100]
-    space_diff  =   [150,-20]
-    size        = [1000,1000]
-    scroll_proportion  = 0.1
-    initial_color       =   {1:30,2:30,3:30}
-    capas = 10
-
-    for i in range(2):
-        for a in range(capas):
-            new_rect = BackgroundRect([i[1] for i in initial_color.items()], pygame.Rect([initial_position[0],initial_position[1],size[0],size[1]]),scroll_proportion)
-            rects.append(new_rect)
-            scroll_proportion += 0.9/capas
-            initial_color[1] += 225/capas
+    def createRects(rects_count, initial_color, color_diff, initial_position, size, space_diff,  scroll_proportion, scroll_proportion_diff):
+        rects = []
+        for i in range(1,rects_count):
+            new_rect = BackgroundRect([a for i,a in initial_color.items()], pygame.Rect(initial_position[0], initial_position[1], size[0], size[1] ),scroll_proportion)
             initial_position[0] += space_diff[0]
-            initial_position[1] += space_diff[1]
-        print(f"-> {initial_position}")
-        scroll_proportion  = 0.1
-        initial_color       =   {1:30,2:30,3:30}
-    return rects, final_color
+            initial_position[1] += space_diff[1] 
+            initial_color[1] += color_diff
+            initial_color[1] = 255 if initial_color[1] >=255 else initial_color[1]
+            scroll_proportion +=scroll_proportion_diff 
+            rects.append(new_rect)
+        return rects
+
+    rects = []
+    capas = 5000
+    final_background_color = [30,30,30]
+    initial_color = {}
+    for i in range(1,4):
+        initial_color[i] = final_background_color[i-1]
+    new_rects = createRects(
+        rects_count=capas, 
+        initial_color=initial_color, 
+        color_diff=3, 
+        initial_position=[-100,500], 
+        size=[5000,200], 
+        space_diff=[0,-15], 
+        scroll_proportion=0.3, 
+        scroll_proportion_diff=(0.9/capas))
+    for i in new_rects:
+        rects.append(i)
+    
+    capas = 10
+    new_rects = createRects(
+        rects_count=capas,
+        initial_color={1:30,2:30,3:30},
+        color_diff=(225/capas), 
+        initial_position=[-400, 0],
+        size = [1000,1000],
+        space_diff=[-50,10],
+        scroll_proportion=(0.1),
+        scroll_proportion_diff=(0.9/capas))
+    
+    for i in new_rects:
+        rects.append(i)
+
+
+    capas = 10
+    new_rects = createRects(
+        rects_count=capas,
+        initial_color={1:30,2:30,3:30},
+        color_diff=(225/capas), 
+        initial_position=[700, 0],
+        size = [1000,1000],
+        space_diff=[200,10],
+        scroll_proportion=(0.1),
+        scroll_proportion_diff=(0.9/capas))
+    
+    for i in new_rects:
+        rects.append(i)
+
+
+
+
+    return rects, final_background_color
 def updateBullets(bullets_list, cell_list, surface_size, scroll, particles, enemy_list, bullet_power, player, bullet_move_change, player_particle_shot_color):
     """
         Actualiza la posicion de las balas, y elimina aquellas que ya no sean renderizables, que esten colisionando con algo o 
