@@ -1,11 +1,4 @@
+- agregar particulas brillantes al disparar
 - agregar sonido de dash
-- agregar rectangulos de fondo
-
-- arreglar error de lag al disparar muchas balas
 - arreglar error con dash cuando se mete dentro del mapa
-
-- modificar sonido de disparo, agregar vvariaciones y un sonido base mas apropiado
-- implementar sonidos de disparo de enemigo, generacion de enemigo, muerte de enemigo, explosion de bala de enemigo, sonido de hit al personaje
-- arreglar problemas de sincrionizacion en la animacion
-- agregar efectos de sonido de colision con elementos del ambiente y con enemigos
-- implementar que los enemigos vuelen y se muevan por el aire
+- hacer que salgan mas enemigos por puntuacion y que su vida sea mayor (ademas arreglar error de barra de vida de enemigos)
