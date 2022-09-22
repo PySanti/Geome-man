@@ -190,24 +190,7 @@ class Player:
                     particles_color_change,
                     False  )
                 particles.append(new_particle)
-            particles_color         =  [200,200,0]
-            particles_color_change =  [1,0,0]
-            particles_size_change  =  0.07
-            particles_size          =   3
-            for i in range(1, randint(10,20)):
-                particle_pos =  [self.rect.centerx - randint(-5,5), self.rect.centery - randint(-5,5)]
-                particles_move          =  [randint(-1,1),0] 
-                particles_move_change   =   [0, randint(1,5)/10] 
-                new_particle     = Particle(
-                    particle_pos.copy(), 
-                    particles_size,
-                    particles_color.copy(), 
-                    particles_move.copy(), 
-                    particles_size_change, 
-                    particles_move_change, 
-                    particles_color_change,
-                    False  )
-                particles.append(new_particle)
+
     def moving(self):
         """
             Retorna True en caso de que el personaje se este moviendo
