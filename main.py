@@ -7,7 +7,7 @@ pygame.mixer.init()
 
 
 #   others, ordenado alfabeticamente
-ASSETS_PATH                             =   "material"
+ASSETS_PATH                             =   "./material"
 SPACE_CHAR                              =   "_"
 
 WINDOW_SIZE                             =   [1000, 700]

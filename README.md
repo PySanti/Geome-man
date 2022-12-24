@@ -1,5 +1,7 @@
 # Welcome to Geome Man
-This is a project made by Santiago De Andrade
+This is a project made by Santiago De Andrade using Python and Pygame.
 
-## Available Scripts
-Install 
+## Using
+
+### Download
+Download the .zip file in this page, unzip on yo 
